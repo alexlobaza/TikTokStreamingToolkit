@@ -1,12 +1,12 @@
 TikTokStreamingToolkit
 ==================
 
-A Node.js project to deliver Gift, Subscriber, and Follow notifications to OBS clients via browser source, built on top of [TikTokWidgets](https://github.com/isaackogan/)TikTokWidgets.
+A Node.js project to deliver Gift, Subscriber, and Follow notifications to OBS clients via browser source, built on top of [TikTokWidgets](https://github.com/isaackogan/).
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white&style=flat-square)](https://www.linkedin.com/in/alexlobaza/)
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/alexlobaza)
 
-This project is a Javascript tool based off of [TikTok-Live-Connector](https://github.com/zerodytrash/TikTok-Live-Connector) by [@zerodytrash](https://github.com/zerodytrash/) meant to serve as a free, open source tool for streamers on the platform.
+This project is a Javascript tool based off of [TikTokWidgets](https://github.com/isaackogan/), which in turn is based on [TikTok-Live-Connector](https://github.com/zerodytrash/TikTok-Live-Connector) by [@zerodytrash](https://github.com/zerodytrash/). It is meant to serve as a free, open source tool for streamers on the platform.
 
 This is **not** an official product. It is a research project & tinkering tool for streamers. I've built all of this because I needed it for my stream. Since I am actively using and maintaing it, and I've gotten questions about it on stream, I thought I'd share it.
 
