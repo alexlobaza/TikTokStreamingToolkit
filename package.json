@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@googleapis/youtube": "^24.0.0",
+    "axios": "^1.8.4",
+    "dotenv": "^16.0.0",
+    "express": "^4.17.2",
+    "form-data": "^4.0.2",
+    "socket.io": "^4.4.1",
+    "tiktok-live-connector": "^1.2.3"
+  }
+}

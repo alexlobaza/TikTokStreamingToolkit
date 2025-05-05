@@ -1,0 +1,97 @@
+{
+  "uniqueId": "YOUR_TIKTOK_USERNAME",
+  "fontSize": 25,
+  "fontWeight": 800,
+  "fadeIn": 2000,
+  "fadeOut": 2000,
+  "fadeAfter": 5000,
+  "textColour": "#ffffff",
+  "nameColour": "#32C3A6",
+
+  "sounds": {
+    "gift": {
+      "default": "/sounds/fc25_gift.wav"
+    },
+    "subscribe": "/sounds/enchanted.wav",
+    "follow": ["/sounds/enchanted.wav"]
+  },
+
+  "enabled": {
+    "gift": true,
+    "subscribe": true,
+    "follow": true
+  },
+
+  "firstFollowOnly": true,
+
+  "followerGoal": {
+    "goal": 50,
+    "startingCount": 0
+  },
+
+  "giftGoal": {
+    "goal": 1000,
+    "startingCount": 0
+  },
+
+  "gifterRank": {
+    "showTotals": true,
+    "textColour": "#ffffff",
+    "accentColour": "#e3fc02",
+    "excludeUsers": []
+  },
+
+  "likeRank": {
+    "showTotals": true,
+    "textColour": "#ffffff",
+    "accentColour": "#e3fc02",
+    "excludeUsers": []
+  },
+
+  "textScroller": {
+    "speed": 2,
+    "pauseBetweenMessages": 1,
+    "messagesJsonURL": "YOUR_MESSAGES_JSON_URL",
+    "accessKey": "YOUR_ACCESS_KEY",
+    "masterKey": "YOUR_MASTER_KEY",
+    "jsonRefreshIntervalMs": "180000",
+    "textColor": "#ffffff",
+    "pixelOffColor": "#222"
+  },
+
+  "hue": {
+    "enabled": false,
+    "hubIp": "YOUR_HUE_HUB_IP",
+    "username": "YOUR_HUE_USERNAME",
+    "clientkey": "YOUR_HUE_CLIENT_KEY",
+    "appName": "YOUR_APP_NAME",
+    "instanceName": "YOUR_INSTANCE_NAME",
+    "targetGroupId": "YOUR_TARGET_GROUP_ID"
+  },
+
+  "apiCalls": {
+    "apiUrl": "YOUR_API_URL",
+    "startStream": {
+      "enabled": false,
+      "endpoint": "YOUR_START_STREAM_ENDPOINT"
+    },
+    "endStream": {
+      "enabled": false,
+      "endpoint": "YOUR_END_STREAM_ENDPOINT"
+    },
+    "storeLogOffsite": {
+      "enabled": false,
+      "endpoint": "YOUR_STORE_LOG_ENDPOINT"
+    }
+  },
+
+  "comments": {
+    "enabled": false,
+    "maxCommentsStored": 100000,
+    "excludeUsers": [],
+    "autoRefreshInterval": 5,
+    "defaultView": "all" 
+  },
+
+  "volume": 0.1
+} 

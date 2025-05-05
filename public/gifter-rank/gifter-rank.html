@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/config.json"></script>
+<title>Top Gifters</title>
+<style>
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  font-family: Arial, sans-serif;
+}
+
+#gifter-rank {
+  background-color: rgba(0, 0, 0, 0.7); /* Dark background */
+  padding: 10px 10px 0px 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  max-width: 225px; /* Set maximum width */
+  width: 225px; /* Set fixed width */
+  margin: auto; /* Center */
+  height: 195px;
+}
+
+.gifter-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  transition: top 0.5s ease-in-out; /* Add transition effect */
+}
+
+.rank {
+  font-size: 24px;
+  margin-right: 14px;
+  margin-left: 10px;
+  /* Color will be set via JavaScript */
+}
+
+.profile-pic {
+  width: 50px;
+  height: auto;
+  border-radius: 50%;
+  margin-right: 10px;
+  /* Border color will be set via JavaScript */
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+}
+
+.nickname {
+  font-weight: bold;
+  color: #FFFFFF; /* White text */
+}
+
+.diamonds {
+  display: flex;
+  align-items: center;
+  font-size: smaller;
+  /* Color will be set via JavaScript */
+}
+
+.coin-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+}
+</style>
+</head>
+<body>
+<div id="gifter-rank"></div>
+<script src="gifter-rank.js"></script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Follower Goal</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/config.json"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+        }
+        
+        .container {
+            width: 300px; /* Adjusted to fit red frame */
+            margin: 0 auto;
+        }
+        
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            color: #e3fc02;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        
+        #progress-bar {
+            width: 100%;
+            height: 30px;
+            background-color: rgba(20, 20, 20, 0.7);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+        }
+        
+        #progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(to right, #1a1a1a, #e3fc02);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Racing-inspired diagonal stripes overlay */
+        #progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: linear-gradient(
+                45deg,
+                rgba(0, 0, 0, 0.1) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(0, 0, 0, 0.1) 50%,
+                rgba(0, 0, 0, 0.1) 75%,
+                transparent 75%
+            );
+            background-size: 10px 10px;
+            z-index: 1;
+        }
+        
+        #counter {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            z-index: 2;
+        }
+        
+        .glow {
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #e3fc02, 0 0 10px #e3fc02;
+            }
+            to {
+                text-shadow: 0 0 10px #e3fc02, 0 0 20px #e3fc02;
+            }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 0.75s ease-in-out;
+        }
+        
+        /* Race flag animation for goal completion */
+        @keyframes checkered-flag {
+            0% { background-position: 0 0; }
+            100% { background-position: 20px 20px; }
+        }
+        
+        @keyframes progress-sweep {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        
+        .goal-complete {
+            background-image: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%);
+            background-size: 10px 10px;
+            animation: 
+                progress-sweep 2s ease-in-out infinite;
+        }
+        
+        /* Transition for glow effect removal */
+        #counter {
+            transition: text-shadow 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="goal-header">
+            <span id="goal-label">GIFT GOAL</span>
+            <span id="remaining-count"></span>
+        </div>
+        <div id="progress-bar">
+            <div id="progress"></div>
+            <div id="counter"></div>
+        </div>
+    </div>
+
+    <script src="/gift-goal/gift-goal.js"></script>
+    <script>
+        // Initialize the FollowerGoal class when the document is ready
+        $(document).ready(function() {
+            fetch('/config.json')
+                .then(response => response.json())
+                .then(config => {
+                    const giftGoal = config.giftGoal;
+                    const goalCount = giftGoal.goal;
+                    const startingCount = giftGoal.startingCount;
+                    const offsetStart = giftGoal.offsetStart || null;
+                    const offsetGoal = giftGoal.offsetGoal || null;
+                    
+                    // Initialize with possible offset values
+                    const goal = new GiftGoal(goalCount, startingCount, offsetStart, offsetGoal);
+                })
+                .catch(error => console.error('Error loading config:', error));
+        });
+    </script>
+</body>
+</html>

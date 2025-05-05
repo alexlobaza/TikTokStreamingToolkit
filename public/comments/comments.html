@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Comments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container-fluid" style="padding-bottom: 30px;">
+        <!-- Settings bar -->
+        <div class="settings-bar d-flex justify-content-between mb-4">
+            <div class="font-size-controls">
+                <span>Font Size:</span>
+                <button id="decreaseFontBtn" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <button id="increaseFontBtn" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+            <div class="theme-switch">
+                <span>Theme:</span>
+                <button id="toggleThemeBtn" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-moon"></i> Dark Mode
+                </button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Search and filter -->
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search comments...">
+                </div>
+                
+                <!-- Tabs for different views -->
+                <ul class="nav nav-tabs" id="commentsTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">All Comments</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pinned-tab" data-bs-toggle="tab" data-bs-target="#pinned" type="button" role="tab">Pinned</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="highlighted-tab" data-bs-toggle="tab" data-bs-target="#highlighted" type="button" role="tab">Highlighted</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="gifts-tab" data-bs-toggle="tab" data-bs-target="#gifts" type="button" role="tab">
+                            Gifts <span class="event-count" id="giftsCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="follows-tab" data-bs-toggle="tab" data-bs-target="#follows" type="button" role="tab">
+                            Follows <span class="event-count" id="followsCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="subscribes-tab" data-bs-toggle="tab" data-bs-target="#subscribes" type="button" role="tab">
+                            Subscribes <span class="event-count" id="subscribesCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="shares-tab" data-bs-toggle="tab" data-bs-target="#shares" type="button" role="tab">
+                            Shares <span class="event-count" id="sharesCount">0</span>
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="commentsTabContent">
+                    <!-- All comments tab -->
+                    <div class="tab-pane fade show active" id="all" role="tabpanel">
+                        <div class="comments-container" id="allComments">
+                            <!-- Comments will be loaded here -->
+                            <div class="no-comments">Loading comments...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pinned comments tab -->
+                    <div class="tab-pane fade" id="pinned" role="tabpanel">
+                        <div class="comments-container" id="pinnedComments">
+                            <!-- Pinned comments will be loaded here -->
+                            <div class="no-comments">No pinned comments yet.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Highlighted comments tab -->
+                    <div class="tab-pane fade" id="highlighted" role="tabpanel">
+                        <div class="comments-container" id="highlightedComments">
+                            <!-- Highlighted comments will be loaded here -->
+                            <div class="no-comments">No highlighted comments yet.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Gifts tab -->
+                    <div class="tab-pane fade" id="gifts" role="tabpanel">
+                        <div class="comments-container" id="giftsComments">
+                            <div class="no-comments">No gifts yet.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Follows tab -->
+                    <div class="tab-pane fade" id="follows" role="tabpanel">
+                        <div class="comments-container" id="followsComments">
+                            <div class="no-comments">No follows yet.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Subscribes tab -->
+                    <div class="tab-pane fade" id="subscribes" role="tabpanel">
+                        <div class="comments-container" id="subscribesComments">
+                            <div class="no-comments">No subscribes yet.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Shares tab -->
+                    <div class="tab-pane fade" id="shares" role="tabpanel">
+                        <div class="comments-container" id="sharesComments">
+                            <div class="no-comments">No shares yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- User stats section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Stats</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Total Comments:</strong> <span id="totalComments">0</span></p>
+                        <p><strong>Unique Commenters:</strong> <span id="uniqueCommenters">0</span></p>
+                        <p><strong>Pinned Comments:</strong> <span id="pinnedCount">0</span></p>
+                    </div>
+                </div>
+                
+                <!-- Top commenters -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Top Commenters</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group" id="topCommenters">
+                            <!-- Top commenters will be loaded here -->
+                            <li class="list-group-item">Loading...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New comments alert -->
+    <div id="newCommentsAlert" class="new-comments-alert">
+        <i class="bi bi-arrow-down-circle"></i> New comments available
+    </div>
+    
+    <!-- Comment template (hidden) -->
+    <template id="commentTemplate">
+        <div class="card comment-card">
+            <div class="card-body">
+                <div class="comment-header">
+                    <img class="profile-img" src="" alt="Profile Picture">
+                    <div>
+                        <h5 class="card-title username">Username</h5>
+                        <div class="timestamp">Time</div>
+                    </div>
+                    <div class="ms-auto comment-actions">
+                        <button class="btn btn-sm btn-outline-warning pin-btn">Pin</button>
+                        <button class="btn btn-sm btn-outline-success highlight-btn">Highlight</button>
+                    </div>
+                </div>
+                <p class="card-text comment-text">Comment text goes here</p>
+            </div>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
