@@ -6,6 +6,10 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# macOS system files
+.DS_Store
+**/.DS_Store
+
 # JSON log files
 comments.json
 followerCount.json
