@@ -14,6 +14,10 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
             apiClient.callApi(config.apiCalls.startStream.endpoint, config)
                 .then(result => console.log('Stream start notification sent:', result));
         }
+
+        if (services.comments.isOffsiteSyncEnabled()) {
+            services.comments.startOffsiteSync();
+        }
     });
 
     // Disconnected event

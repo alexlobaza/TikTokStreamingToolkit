@@ -61,10 +61,6 @@ if(config.hue.enabled) {
   hueModule.fetchInitialGroupState(config.hue.targetGroupId);
 }
 
-if (comments.isOffsiteSyncEnabled()) {
-  comments.startOffsiteSync();
-}
-
 // Serve widget pages
 const widgetPages = [
   { path: '/follower-goal', file: 'follower-goal/follower-goal.html' },
