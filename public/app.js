@@ -296,7 +296,7 @@ connection.on("subscribe", (data) => {
     }
 
     let announcement = new Announcement(
-        data["uniqueId"],
+        data["nickname"] != "" ? data["nickname"] : data["uniqueId"],
         data["profilePictureUrl"],
         `just subscribed!`,
         Config["sounds"]["subscribe"] || null,

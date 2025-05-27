@@ -127,10 +127,10 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
         // Handle Philips Hue integration if enabled
         if (config.hue.enabled) {
             services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                duration: 100,
-                count: 5,
+                duration: 150,
+                count: 10,
                 color: [0.67, 0.33],
-                brightnessIncrease: 100,
+                brightnessIncrease: 200,
                 transitionTime: 10
             }).catch(error => console.error('Error pulsing lights for subscribe:', error));
         }
