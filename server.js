@@ -69,6 +69,7 @@ const widgetPages = [
   { path: '/like-rank', file: 'like-rank/like-rank.html' },
   { path: '/text-scroller', file: 'text-scroller/text-scroller.html' },
   { path: '/comments', file: 'comments/comments.html' },
+  { path: '/image-slider', file: 'image-slider/image-slider.html' },
 ];
 widgetPages.forEach(({ path: routePath, file }) => {
   app.get(routePath, (req, res) => {

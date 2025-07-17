@@ -19,6 +19,7 @@ Feel free to make pull requests with missing/new features, fixes, etc.
 - Subscriber notifications `http://localhost:8082/`
 - Follower and gift goal widgets  `http://localhost:8082/follower-goal` and `http://localhost:8082/gift-goal`
 - Gifter and like ranking system `http://localhost:8082/gifter-rank` and `http://localhost:8082/like-rank`
+- Image slider widget with card flip animations `http://localhost:8082/image-slider`
 - Customizable text scroller for announcements `http://localhost:8082/text-scroller`
 - Exclude specific users from rankings
 - Philips HUE integration for lighting effects
@@ -133,6 +134,85 @@ Sounds will not work unless you click/interact with the page first after loading
   }
 }
 ```
+
+### Image Slider Widget
+
+The image slider widget displays a rotating sequence of PNG images with smooth card flip animations. It's perfect for showcasing sponsors, announcements, or promotional content during your stream.
+
+#### Setup Instructions
+
+1. **Create the images folder:**
+   ```
+   public/images/image-slider/
+   ```
+
+2. **Add your PNG images:**
+   - Place your PNG files in the `public/images/image-slider/` folder
+   - Recommended size: **450px × 780px** (maintains 1:1.73 aspect ratio)
+   - Images will automatically scale to fit the widget container
+   - Use PNG format for best quality and transparency support
+
+3. **Configure the widget in `config.json`:**
+   ```json
+   {
+     "imageSlider": {
+       "disappearTime": 5,
+       "images": [
+         {
+           "path": "/images/image-slider/sponsor1.png",
+           "duration": 10
+         },
+         {
+           "path": "/images/image-slider/announcement.png",
+           "duration": 15
+         },
+         {
+           "path": "/images/image-slider/promo.png",
+           "duration": 8
+         }
+       ]
+     }
+   }
+   ```
+
+#### Configuration Options
+
+- **`disappearTime`**: Number of seconds the widget disappears completely (default: 5)
+- **`images`**: Array of image objects, each containing:
+  - **`path`**: Path to the PNG file (relative to `public/` folder)
+  - **`duration`**: How long to display this image in seconds
+
+#### Widget Behavior
+
+1. **Image Rotation**: Widget cycles through all configured images in sequence
+2. **Card Flip Animation**: Each image transition uses a smooth 3D flip effect
+3. **Disappear State**: After showing all images, the widget disappears for the configured time
+4. **Infinite Loop**: After disappearing, the cycle starts over from the first image
+5. **Error Handling**: If no images are configured, the widget hides with a console message
+
+#### OBS Setup
+
+1. Add a new Browser Source in OBS
+2. Set the URL to `http://localhost:8082/image-slider`
+3. Set the width and height according to your needs:
+   - **Native size**: 450px × 780px
+   - **Scale down**: Any smaller size (no quality loss)
+   - **Scale up**: Can be made larger without distortion
+4. Enable "Control audio via OBS" if needed
+5. Click "OK" to save
+
+#### Example Use Cases
+
+- **Sponsor Showcase**: Display sponsor logos with different durations
+- **Stream Announcements**: Show upcoming events or schedule
+- **Promotional Content**: Highlight special offers or merchandise
+- **Community Recognition**: Display supporter badges or achievements
+
+#### Troubleshooting
+
+- **Widget not showing**: Check console for error messages about missing configuration
+- **Images not loading**: Verify file paths are correct and images exist in the specified folder
+- **Animation issues**: Ensure browser supports CSS 3D transforms
 
 ## Troubleshooting
 

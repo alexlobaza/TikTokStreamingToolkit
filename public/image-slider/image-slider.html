@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/config.json"></script>
+<title>Image Slider</title>
+<style>
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  font-family: Arial, sans-serif;
+}
+
+#image-slider {
+  background-color: rgba(0, 0, 0, 0.7); /* Dark background */
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  max-width: 225px; /* Same width as like-rank/gifter-rank */
+  width: 225px; /* Set fixed width */
+  margin: auto; /* Center */
+  height: 390px; /* Twice the height of like-rank/gifter-rank (195 * 2) */
+  overflow: hidden; /* Hide overflow */
+  position: relative;
+}
+
+.slider-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Fill the entire container */
+  border-radius: 5px;
+}
+
+#image-slider {
+  background-color: rgba(0, 0, 0, 0.7); /* Dark background */
+  padding: 20px; /* Half of 4K padding */
+  border-radius: 20px; /* Half of 4K border radius */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* Half of 4K shadow */
+  max-width: 450px; /* Half of 4K width (900 / 2) */
+  width: 450px; /* Set fixed width */
+  margin: auto; /* Center */
+  height: 780px; /* Half of 4K height (1560 / 2) */
+  overflow: hidden; /* Hide overflow */
+  position: relative;
+  transition: transform 0.3s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+#image-slider.flip-out {
+  transform: rotateY(90deg);
+}
+
+#image-slider.flip-in {
+  transform: rotateY(0deg);
+}
+
+#image-slider.hide {
+  transform: rotateY(90deg);
+}
+</style>
+</head>
+<body>
+<div id="image-slider"></div>
+<script src="image-slider.js"></script>
+</body>
+</html> 

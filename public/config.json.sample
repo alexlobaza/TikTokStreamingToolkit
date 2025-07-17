@@ -10,7 +10,15 @@
 
   "sounds": {
     "gift": {
-      "default": "/sounds/fc25_gift.wav"
+      "default": "/sounds/fc25_gift.wav",
+      "you're awesome": "/sounds/enchanted.wav",
+      "10/10": "/sounds/enchanted.wav",
+      "rosa": "/sounds/enchanted.wav",
+      "gold boxing gloves": "/sounds/enchanted.wav",
+      "dougnut": "/sounds/enchanted.wav",
+      "cap": "/sounds/enchanted.wav",
+      "super gg": "/sounds/enchanted.wav",
+      "throw tomaroes": "/sounds/enchanted.wav"
     },
     "subscribe": "/sounds/enchanted.wav",
     "follow": ["/sounds/enchanted.wav"]
@@ -46,6 +54,20 @@
     "textColour": "#ffffff",
     "accentColour": "#e3fc02",
     "excludeUsers": []
+  },
+
+  "imageSlider": {
+    "disappearTime": 5,
+    "images": [
+      {
+        "path": "/images/example1.png",
+        "duration": 10
+      },
+      {
+        "path": "/images/example2.png",
+        "duration": 15
+      }
+    ]
   },
 
   "textScroller": {
