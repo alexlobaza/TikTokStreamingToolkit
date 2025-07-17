@@ -105,6 +105,7 @@ class Comments {
         commentsData.viewerData = viewerData;
       } else {
         commentsData.viewerData = {};
+        return;
       }
 
       // Convert back to string with the added like data

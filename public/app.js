@@ -113,15 +113,17 @@ class Announcement {
     #message;
     #soundUrl;
     #circleCrop;
+    #type;
     static #queue = [];
     static #isProcessing = false;
 
-    constructor(uniqueId, imageUrl, message, soundUrl, circleCrop = false) {
+    constructor(uniqueId, imageUrl, message, soundUrl, circleCrop = false, type = null) {
         this.#uniqueId = uniqueId;
         this.#imageUrl = imageUrl;
         this.#message = message;
         this.#soundUrl = soundUrl;
         this.#circleCrop = circleCrop;
+        this.#type = type;
     }
 
     static #getAnimatedLetters(name, _html = "") {
@@ -154,6 +156,11 @@ class Announcement {
         this.#isProcessing = true;
         const announcement = this.#queue.shift();
 
+        // Emit light event based on announcement type
+        if (announcement.#type) {
+            connection.socket.emit(announcement.#type + 'Lights');
+        }
+
         $(".current").replaceWith(announcement.build());
         announcement.sound();
 
@@ -176,7 +183,7 @@ class Announcement {
 
     build() {
         const cleanedId = Announcement.#cleanUniqueId(this.#uniqueId);
-        
+        const borderRadius = this.#circleCrop ? '50%' : '8px';
         return `
              <div class="alertContainer current" style="
                 animation: fadein ${Config["fadeIn"] || 0}ms, fadeout ${Config["fadeOut"] || 0}ms; 
@@ -196,7 +203,7 @@ class Announcement {
                     width: 70px;
                     height: 70px;
                     object-fit: cover;
-                    border-radius: 8px;
+                    border-radius: ${borderRadius};
                     grid-row: span 2;
                     margin-left: 10px;
                 "/>
@@ -248,7 +255,9 @@ connection.on('gift', (data) => {
         data["nickname"],
         data["giftPictureUrl"],
         `sent ${data["repeatCount"]}x ${data["giftName"]}`,
-        Config["sounds"]["gift"][data["giftName"].toLowerCase()] || Config["sounds"]["gift"]["default"]
+        Config["sounds"]["gift"][data["giftName"].toLowerCase()] || Config["sounds"]["gift"]["default"],
+        false,
+        'gift'
     );
 
     Announcement.addToQueue(announcement);
@@ -279,7 +288,8 @@ connection.on("social", (data) => {
         '/images/raccoon.GIF',
         `is now following!`,
         Config["sounds"]["follow"][Math.floor(Math.random() * Config["sounds"]["follow"].length)],
-        true
+        true,
+        'newFollower'
     );
 
     Announcement.addToQueue(announcement);
@@ -300,7 +310,8 @@ connection.on("subscribe", (data) => {
         data["profilePictureUrl"],
         `just subscribed!`,
         Config["sounds"]["subscribe"] || null,
-        true
+        true,
+        'subscribe'
     )
 
     Announcement.addToQueue(announcement);

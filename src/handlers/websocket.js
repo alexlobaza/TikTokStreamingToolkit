@@ -70,17 +70,6 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
             };
             services.comments.update(giftComment);
         }
-
-        // Handle Philips Hue integration if enabled
-        if (config.hue.enabled) {
-            services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                duration: 100,
-                count: 3,
-                color: [0.55, 0.45],
-                brightnessIncrease: 100,
-                transitionTime: 10
-            }).catch(error => console.error('Error pulsing lights for gift:', error));
-        }
     });
 
     // Social event
@@ -123,17 +112,6 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
             eventType: 'subscribe'
         };
         services.comments.update(subscribeComment);
-        
-        // Handle Philips Hue integration if enabled
-        if (config.hue.enabled) {
-            services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                duration: 150,
-                count: 10,
-                color: [0.67, 0.33],
-                brightnessIncrease: 200,
-                transitionTime: 10
-            }).catch(error => console.error('Error pulsing lights for subscribe:', error));
-        }
     });
 
     // New follower event
@@ -151,17 +129,6 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
             createTime: Date.now().toString()
         };
         services.comments.update(followComment);
-        
-        // Handle Philips Hue integration if enabled
-        if (config.hue.enabled) {
-            services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                duration: 100,
-                count: 4,
-                color: [0.45, 0.41], // Warm white
-                brightnessIncrease: 100,
-                transitionTime: 10
-            }).catch(error => console.error('Error pulsing lights for new follower:', error));
-        }
     });
 
     // Stream end event from client
@@ -224,6 +191,41 @@ function setupSocketHandlers(io, config) {
         socket.on('disconnect', () => {
             if (tiktokConnectionWrapper) {
                 tiktokConnectionWrapper.disconnect();
+            }
+        });
+
+        // Listen for light effect triggers from client
+        socket.on('subscribeLights', () => {
+            if (config.hue.enabled) {
+                services.hue.pulseGroupLights(config.hue.targetGroupId, {
+                    duration: 150,
+                    count: 10,
+                    color: [0.67, 0.33],
+                    brightnessIncrease: 200,
+                    transitionTime: 10
+                }).catch(error => console.error('Error pulsing lights for subscribe:', error));
+            }
+        });
+        socket.on('newFollowerLights', () => {
+            if (config.hue.enabled) {
+                services.hue.pulseGroupLights(config.hue.targetGroupId, {
+                    duration: 100,
+                    count: 4,
+                    color: [0.45, 0.41], // Warm white
+                    brightnessIncrease: 100,
+                    transitionTime: 10
+                }).catch(error => console.error('Error pulsing lights for new follower:', error));
+            }
+        });
+        socket.on('giftLights', () => {
+            if (config.hue.enabled) {
+                services.hue.pulseGroupLights(config.hue.targetGroupId, {
+                    duration: 100,
+                    count: 3,
+                    color: [0.55, 0.45],
+                    brightnessIncrease: 100,
+                    transitionTime: 10
+                }).catch(error => console.error('Error pulsing lights for gift:', error));
             }
         });
     });
