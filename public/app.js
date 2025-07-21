@@ -235,9 +235,19 @@ class Announcement {
             return;
         }
 
-        let audio = new Audio(this.#soundUrl);
-        audio.volume = Config["volume"];
-        audio.play().catch();
+        let file, volume;
+        if (typeof this.#soundUrl === 'object' && this.#soundUrl !== null) {
+            file = this.#soundUrl.file;
+            volume = typeof this.#soundUrl.volume === 'number' ? this.#soundUrl.volume : Config["volume"];
+        } else {
+            file = this.#soundUrl;
+            volume = Config["volume"];
+        }
+
+        if (!file) return;
+        let audio = new Audio(file);
+        audio.volume = volume;
+        audio.play().catch(() => {});
     }
 }
 
@@ -283,11 +293,13 @@ connection.on("social", (data) => {
 
     followed[data["uniqueId"]] = true;
 
+    let followSounds = Config["sounds"]["follow"];
+    let followSoundObj = Array.isArray(followSounds) ? followSounds[Math.floor(Math.random() * followSounds.length)] : followSounds;
     let announcement = new Announcement(
         data["nickname"] != "" ? data["nickname"] : data["uniqueId"],
         '/images/raccoon.GIF',
         `is now following!`,
-        Config["sounds"]["follow"][Math.floor(Math.random() * Config["sounds"]["follow"].length)],
+        followSoundObj,
         true,
         'newFollower'
     );
@@ -305,11 +317,12 @@ connection.on("subscribe", (data) => {
         return;
     }
 
+    let subscribeSound = Config["sounds"]["subscribe"];
     let announcement = new Announcement(
         data["nickname"] != "" ? data["nickname"] : data["uniqueId"],
         data["profilePictureUrl"],
         `just subscribed!`,
-        Config["sounds"]["subscribe"] || null,
+        subscribeSound || null,
         true,
         'subscribe'
     )
