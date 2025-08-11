@@ -113,7 +113,7 @@ class KickOAuthHandler {
 
     // Create Express routes for OAuth flow
     createRoutes(app) {
-        // OAuth initiation endpoint
+        // OAuth initiation endpoint (GET - for direct browser access)
         app.get('/oauth/kick/start', (req, res) => {
             try {
                 const authInfo = this.generateAuthUrl();

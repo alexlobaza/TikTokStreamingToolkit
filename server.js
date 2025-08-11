@@ -141,7 +141,9 @@ app.use('/api', apiRoutes);
 const kickOAuthHandler = new KickOAuthHandler(
     config.kick?.appKey || '01K2CHA37J8SFQVVTVQF5DB76K',
     config.kick?.appSecret || '8140d53f799e118feb47367e852c8800b8c4b75050532a6b0c1e599433b19a84',
-    'http://localhost:8082'
+    process.env.NODE_ENV === 'production' 
+        ? 'https://tiktokstreamingtoolkit.onrender.com'
+        : 'http://localhost:8082'
 );
 
 // Add OAuth routes
