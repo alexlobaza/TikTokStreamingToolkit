@@ -1,10 +1,11 @@
 // websocket/handlers.js - Socket.io event handlers
 const { getGlobalConnectionCount } = require('../services/tiktok');
+const { getGlobalKickWebhookCount } = require('../services/kick');
 const services = require('../services');
 const apiClient = require('../utils/apiClient');
 
 // TikTok connection wrapper setup
-function setupEventListeners(socket, tiktokConnectionWrapper, config) {
+function setupTikTokEventListeners(socket, tiktokConnectionWrapper, config) {
     // Connected event
     tiktokConnectionWrapper.once('connected', state => {
         socket.emit('tiktokConnected', state);
@@ -141,23 +142,97 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     });
 }
 
+// Kick connection wrapper setup
+function setupKickEventListeners(socket, kickConnectionWrapper, config) {
+    // Connected event
+    kickConnectionWrapper.once('connected', state => {
+        socket.emit('kickConnected', state);
+
+        // Call the startStream API if enabled
+        if (config.apiCalls.startStream && config.apiCalls.startStream.enabled) {
+            apiClient.callApi(config.apiCalls.startStream.endpoint, config)
+                .then(result => console.log('Kick stream start notification sent:', result));
+        }
+
+        if (services.comments.isOffsiteSyncEnabled()) {
+            services.comments.startOffsiteSync();
+        }
+    });
+
+    // Disconnected event
+    kickConnectionWrapper.once('disconnected', reason => socket.emit('kickDisconnected', reason));
+
+    // Chat event
+    kickConnectionWrapper.on('chat', msg => { 
+        socket.emit('chat', msg);
+        services.comments.update(msg);
+    });
+
+    // Gift event
+    kickConnectionWrapper.on('gift', msg => {
+        socket.emit('gift', msg);
+        services.gifterRank.update(msg);
+
+        // Add to comments with gift info
+        const giftComment = {
+            ...msg,
+            comment: `Sent gift: ${msg.giftName} x${msg.repeatCount}`,
+            isGift: true,
+            eventType: 'gift'
+        };
+        services.comments.update(giftComment);
+    });
+    
+    // Like event
+    kickConnectionWrapper.on('like', msg => {
+        socket.emit('like', msg);
+        services.likeRank.update(msg);
+    });
+
+    // Follow event
+    kickConnectionWrapper.on('follow', msg => {
+        socket.emit('follow', msg);
+        services.followers.update(msg);
+    });
+
+    // Stream events
+    kickConnectionWrapper.on('streamStarted', msg => {
+        socket.emit('streamStarted', msg);
+    });
+
+    kickConnectionWrapper.on('streamEnded', msg => {
+        socket.emit('streamEnded', msg);
+    });
+
+    // Viewer count updates
+    kickConnectionWrapper.on('viewerCount', msg => {
+        socket.emit('viewerCount', msg);
+        services.viewers.update({
+            viewerCount: msg.viewerCount,
+            msgId: `kick_viewer_${Date.now()}`,
+            roomId: `kick_${kickConnectionWrapper.channelName}`
+        });
+    });
+}
+
 // Setup socket connection handlers
 function setupSocketHandlers(io, config) {
     io.on('connection', (socket) => {
 
         let tiktokConnectionWrapper;
+        let kickConnectionWrapper;
 
         // Connect to TikTok with retry mechanism
-        function connectWithRetry(uniqueId, options, retryCount = 0) {
+        function connectTikTokWithRetry(uniqueId, options, retryCount = 0) {
             try {
                 tiktokConnectionWrapper = new services.tiktok.TikTokConnectionWrapper(uniqueId, options, true);
                 tiktokConnectionWrapper.connect();
                 
                 // If connection is successful, set up event listeners
-                setupEventListeners(socket, tiktokConnectionWrapper, config);
+                setupTikTokEventListeners(socket, tiktokConnectionWrapper, config);
             } catch (err) {
-                console.error(`Connection attempt ${retryCount + 1} failed:`, err.toString());
-                socket.emit('connectionAttempt', { 
+                console.error(`TikTok connection attempt ${retryCount + 1} failed:`, err.toString());
+                socket.emit('tiktokConnectionAttempt', { 
                     success: false, 
                     error: err.toString(), 
                     retryCount: retryCount + 1 
@@ -165,26 +240,76 @@ function setupSocketHandlers(io, config) {
 
                 // Retry after 1 minute
                 setTimeout(() => {
-                    connectWithRetry(uniqueId, options, retryCount + 1);
+                    connectTikTokWithRetry(uniqueId, options, retryCount + 1);
                 }, 60000); // 60000 ms = 1 minute
             }
         }
 
-        // Handle setUniqueId event
+        // Connect to Kick with retry mechanism
+        function connectKickWithRetry(channelName, appKey, appSecret, retryCount = 0) {
+            try {
+                kickConnectionWrapper = new services.kick.KickConnectionWrapper(channelName, appKey, appSecret, {}, true);
+                kickConnectionWrapper.connect();
+                
+                // If connection is successful, set up event listeners
+                setupKickEventListeners(socket, kickConnectionWrapper, config);
+            } catch (err) {
+                console.error(`Kick connection attempt ${retryCount + 1} failed:`, err.toString());
+                socket.emit('kickConnectionAttempt', { 
+                    success: false, 
+                    error: err.toString(), 
+                    retryCount: retryCount + 1 
+                });
+
+                // Retry after 1 minute
+                setTimeout(() => {
+                    connectKickWithRetry(channelName, appKey, appSecret, retryCount + 1);
+                }, 60000); // 60000 ms = 1 minute
+            }
+        }
+
+        // Handle setUniqueId event (TikTok) - only if enabled
         socket.on('setUniqueId', (uniqueId, options) => {
+            if (!config.tiktok?.enabled) {
+                socket.emit('tiktokConnectionAttempt', { 
+                    success: false, 
+                    error: 'TikTok is disabled in configuration' 
+                });
+                return;
+            }
+
             // Prohibit the client from specifying these options (for security reasons)
             if (typeof options === 'object') {
                 delete options.requestOptions;
                 delete options.websocketOptions;
             }
 
-            // Is the client already connected to a stream? => Disconnect
+            // Is the client already connected to TikTok? => Disconnect
             if (tiktokConnectionWrapper) {
                 tiktokConnectionWrapper.disconnect();
             }
 
             // Connect to the given username (uniqueId) with retry mechanism
-            connectWithRetry(uniqueId, options);
+            connectTikTokWithRetry(uniqueId, options);
+        });
+
+        // Handle setKickChannel event - only if enabled
+        socket.on('setKickChannel', (channelName, appKey, appSecret) => {
+            if (!config.kick?.enabled) {
+                socket.emit('kickConnectionAttempt', { 
+                    success: false, 
+                    error: 'Kick is disabled in configuration' 
+                });
+                return;
+            }
+
+            // Is the client already connected to Kick? => Disconnect
+            if (kickConnectionWrapper) {
+                kickConnectionWrapper.disconnect();
+            }
+
+            // Connect to the given channel with retry mechanism
+            connectKickWithRetry(channelName, appKey, appSecret);
         });
 
         // Handle disconnect event
@@ -192,48 +317,66 @@ function setupSocketHandlers(io, config) {
             if (tiktokConnectionWrapper) {
                 tiktokConnectionWrapper.disconnect();
             }
+            if (kickConnectionWrapper) {
+                kickConnectionWrapper.disconnect();
+            }
         });
 
-        // Listen for light effect triggers from client
+        // Emit Hue light triggers to client for local network access
         socket.on('subscribeLights', () => {
             if (config.hue.enabled) {
-                services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                    duration: 150,
-                    count: 10,
-                    color: [0.67, 0.33],
-                    brightnessIncrease: 200,
-                    transitionTime: 10
-                }).catch(error => console.error('Error pulsing lights for subscribe:', error));
+                socket.emit('hueTrigger', {
+                    action: 'pulseGroupLights',
+                    targetGroupId: config.hue.targetGroupId,
+                    options: {
+                        duration: 150,
+                        count: 10,
+                        color: [0.67, 0.33],
+                        brightnessIncrease: 200,
+                        transitionTime: 10
+                    }
+                });
             }
         });
         socket.on('newFollowerLights', () => {
             if (config.hue.enabled) {
-                services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                    duration: 100,
-                    count: 4,
-                    color: [0.45, 0.41], // Warm white
-                    brightnessIncrease: 100,
-                    transitionTime: 10
-                }).catch(error => console.error('Error pulsing lights for new follower:', error));
+                socket.emit('hueTrigger', {
+                    action: 'pulseGroupLights',
+                    targetGroupId: config.hue.targetGroupId,
+                    options: {
+                        duration: 100,
+                        count: 4,
+                        color: [0.45, 0.41], // Warm white
+                        brightnessIncrease: 100,
+                        transitionTime: 10
+                    }
+                });
             }
         });
         socket.on('giftLights', () => {
             if (config.hue.enabled) {
-                services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                    duration: 100,
-                    count: 3,
-                    color: [0.55, 0.45],
-                    brightnessIncrease: 100,
-                    transitionTime: 10
-                }).catch(error => console.error('Error pulsing lights for gift:', error));
+                socket.emit('hueTrigger', {
+                    action: 'pulseGroupLights',
+                    targetGroupId: config.hue.targetGroupId,
+                    options: {
+                        duration: 100,
+                        count: 3,
+                        color: [0.55, 0.45],
+                        brightnessIncrease: 100,
+                        transitionTime: 10
+                    }
+                });
             }
         });
     });
 
-    // Emit global connection statistics
-    setInterval(() => {
-        io.emit('statistic', { globalConnectionCount: getGlobalConnectionCount() });
-    }, 5000);
+            // Emit global connection statistics
+        setInterval(() => {
+            io.emit('statistic', { 
+                globalConnectionCount: getGlobalConnectionCount(),
+                globalKickWebhookCount: getGlobalKickWebhookCount()
+            });
+        }, 5000);
 }
 
 module.exports = setupSocketHandlers;

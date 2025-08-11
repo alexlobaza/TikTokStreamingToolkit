@@ -1,4 +1,11 @@
 {
+  "name": "tiktok-widgets",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node scripts/build-config.js",
+    "postinstall": "npm run build"
+  },
   "dependencies": {
     "@googleapis/youtube": "^24.0.0",
     "axios": "^1.8.4",
@@ -6,6 +13,7 @@
     "express": "^4.17.2",
     "form-data": "^4.0.2",
     "socket.io": "^4.4.1",
-    "tiktok-live-connector": "^1.2.3"
+    "tiktok-live-connector": "^1.2.3",
+    "ws": "^8.18.3"
   }
 }

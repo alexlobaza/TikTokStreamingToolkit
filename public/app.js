@@ -63,6 +63,9 @@ class TikTokIOConnection {
 
 let connection = new TikTokIOConnection();
 
+// Initialize Hue client for local network access
+let hueClient = null;
+
 
 let Config = {
     firstConnect: true,
@@ -73,6 +76,23 @@ let Config = {
         fetch("/config.json").then((response) => response.json()).then((json) => {
             Config = Object.assign({}, Config, json);
 
+            // Initialize Hue client if enabled
+            if (Config.hue?.enabled && !hueClient) {
+                // Load Hue client script dynamically
+                if (typeof HueClient === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = '/hue-client.js';
+                    script.onload = () => {
+                        hueClient = new HueClient(Config);
+                        setupHueEventHandlers();
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    hueClient = new HueClient(Config);
+                    setupHueEventHandlers();
+                }
+            }
+
             if (this.firstConnect || this.retryCount > 0) {
                 this.connectWithRetry();
             }
@@ -82,8 +102,10 @@ let Config = {
     },
 
     connectWithRetry() {
-        Logger.INFO("Connecting to %s... (Attempt %d)", Config["uniqueId"], this.retryCount + 1);
-        connection.connect(Config["uniqueId"], {enableExtendedGiftInfo: true})
+        // Use the new nested TikTok config structure
+        const tiktokUniqueId = Config.tiktok?.uniqueId || Config["uniqueId"];
+        Logger.INFO("Connecting to %s... (Attempt %d)", tiktokUniqueId, this.retryCount + 1);
+        connection.connect(tiktokUniqueId, {enableExtendedGiftInfo: true})
             .then(state => {
                 Logger.INFO("Connected to roomId %s", state["roomId"]);
                 this.firstConnect = false;
@@ -330,3 +352,53 @@ connection.on("subscribe", (data) => {
     Announcement.addToQueue(announcement);
 
 })
+
+// Hue event handlers for local network access
+function setupHueEventHandlers() {
+    if (!hueClient) return;
+
+    // Listen for Hue triggers from server
+    connection.socket.on('hueTrigger', (trigger) => {
+        console.log('💡 Received Hue trigger from server:', trigger);
+        hueClient.handleHueTrigger(trigger);
+    });
+
+    // Light effect triggers
+    connection.socket.on('subscribeLights', () => {
+        if (hueClient && Config.hue?.enabled) {
+            hueClient.pulseGroupLights(Config.hue.targetGroupId, {
+                duration: 150,
+                count: 10,
+                color: [0.67, 0.33],
+                brightnessIncrease: 200,
+                transitionTime: 10
+            });
+        }
+    });
+
+    connection.socket.on('newFollowerLights', () => {
+        if (hueClient && Config.hue?.enabled) {
+            hueClient.pulseGroupLights(Config.hue.targetGroupId, {
+                duration: 100,
+                count: 4,
+                color: [0.45, 0.41], // Warm white
+                brightnessIncrease: 100,
+                transitionTime: 10
+            });
+        }
+    });
+
+    connection.socket.on('giftLights', () => {
+        if (hueClient && Config.hue?.enabled) {
+            hueClient.pulseGroupLights(Config.hue.targetGroupId, {
+                duration: 100,
+                count: 3,
+                color: [0.55, 0.45],
+                brightnessIncrease: 100,
+                transitionTime: 10
+            });
+        }
+    });
+
+    console.log('💡 Hue event handlers set up successfully');
+}

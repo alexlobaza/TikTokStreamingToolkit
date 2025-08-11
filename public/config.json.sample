@@ -1,5 +1,15 @@
 {
-  "uniqueId": "YOUR_TIKTOK_USERNAME",
+  "tiktok": {
+    "enabled": true,
+    "uniqueId": "YOUR_TIKTOK_USERNAME"
+  },
+  "kick": {
+    "enabled": false,
+    "channelName": "YOUR_KICK_CHANNEL_NAME",
+    "appKey": "YOUR_KICK_APP_KEY",
+    "appSecret": "YOUR_KICK_APP_SECRET"
+  },
+  
   "fontSize": 25,
   "fontWeight": 800,
   "fadeIn": 2000,
@@ -118,5 +128,9 @@
     "defaultView": "all" 
   },
 
+  "display": {
+    "showPlatformIndicators": true,
+    "platformIndicatorStyle": "subtle"
+  },
   "volume": 0.1
 } 

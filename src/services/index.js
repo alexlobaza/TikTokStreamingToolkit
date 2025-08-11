@@ -9,6 +9,7 @@ const config = JSON.parse(configData);
 
 // Import services
 const tiktok = require('./tiktok');
+const kick = require('./kick');
 const FollowersService = require('../modules/followers');
 const CommentsService = require('../modules/comments');
 const ViewersService = require('../modules/viewers');
@@ -26,6 +27,7 @@ const likeRank = new LikeRankService(config);
 // Export all services
 module.exports = {
     tiktok,
+    kick,
     followers,
     comments,
     viewers,
