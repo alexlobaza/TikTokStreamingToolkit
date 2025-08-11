@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const ContentSanitizer = require('../utils/sanitizer');
 
 class Viewers {
   constructor(config) {
@@ -35,16 +36,11 @@ class Viewers {
   // Actual update logic moved into this function
   updateFromQueue(data) {
     let fileData;
-    try {
-      const rawData = fs.readFileSync(this.viewersPath, 'utf8');
-      fileData = JSON.parse(rawData);
-    } catch (error) {
-      console.error('Error reading viewers file:', error);
-      fileData = { 
-        entries: {},
-        totalUpdates: 0
-      };
-    }
+    // Read the current data from the file with safe parsing
+    fileData = ContentSanitizer.safeReadJSON(this.viewersPath, { 
+      entries: {},
+      totalUpdates: 0
+    });
 
     const { viewerCount, msgId, roomId } = data;
     const timestamp = Date.now();
@@ -66,7 +62,7 @@ class Viewers {
     fileData.totalUpdates++;
 
     // Write the updated data back to the file
-    fs.writeFileSync(this.viewersPath, JSON.stringify(fileData, null, 2));
+          fs.writeFileSync(this.viewersPath, ContentSanitizer.safeStringify(fileData, 2));
   }
 
   initialize() {
@@ -77,7 +73,7 @@ class Viewers {
     
     try {
       this.ensureDirectoryExists();
-      fs.writeFileSync(this.viewersPath, JSON.stringify(initialData, null, 2));
+      fs.writeFileSync(this.viewersPath, ContentSanitizer.safeStringify(initialData, 2));
       console.log('Viewers file has been reset.');
     } catch (error) {
       console.error('Error initializing viewers file:', error);

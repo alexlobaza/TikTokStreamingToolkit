@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const ContentSanitizer = require('../utils/sanitizer');
 
 class GifterRank {
   constructor(config) {
@@ -33,13 +34,8 @@ class GifterRank {
       return;
     }
 
-    try {
-      const fileData = fs.readFileSync(this.gifterRankPath, 'utf8');
-      data = JSON.parse(fileData);
-    } catch (error) {
-      console.error('Error reading gifter rank file:', error);
-      data = { totalDiamonds: 0, gifters: {} };
-    }
+    // Read the current data from the file with safe parsing
+    data = ContentSanitizer.safeReadJSON(this.gifterRankPath, { totalDiamonds: 0, gifters: {} });
 
     if (this.config.gifterRank.excludeUsers.includes(uniqueId)) {
       console.log(`Excluding user with uniqueId: ${uniqueId}`);
@@ -70,21 +66,19 @@ class GifterRank {
       gifter.totalDiamonds += diamonds;
       data.totalDiamonds += diamonds;
 
-      fs.writeFileSync(this.gifterRankPath, JSON.stringify(data, null, 2));
+      fs.writeFileSync(this.gifterRankPath, ContentSanitizer.safeStringify(data, 2));
     }
   }
 
   getTotalDiamonds() {
-    const data = fs.readFileSync(this.gifterRankPath, 'utf8');
-    const parsedData = JSON.parse(data);
+    const parsedData = ContentSanitizer.safeReadJSON(this.gifterRankPath, { totalDiamonds: 0 });
    
     return parsedData.totalDiamonds;
   }
 
   getTopGifters(count) {
     try {
-      const data = fs.readFileSync(this.gifterRankPath, 'utf8');
-      const parsedData = JSON.parse(data);
+      const parsedData = ContentSanitizer.safeReadJSON(this.gifterRankPath, { gifters: {} });
 
       // Sort gifters by totalDiamonds in descending order and return top 3
       const topGifters = Object.values(parsedData.gifters)
@@ -101,7 +95,7 @@ class GifterRank {
     const initialData = { totalDiamonds: 0, gifters: {} };
 
     try {
-      fs.writeFileSync(this.gifterRankPath, JSON.stringify(initialData, null, 2));
+      fs.writeFileSync(this.gifterRankPath, ContentSanitizer.safeStringify(initialData, 2));
       console.log('Gifter rank file has been reset.');
     } catch (error) {
       console.error('Error initializing gifter rank file:', error);

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const ContentSanitizer = require('../utils/sanitizer');
 const FormData = require('form-data');
 
 class Comments {
@@ -90,7 +91,7 @@ class Comments {
       const syncFilename = `${formattedDate}-stream-log.json`;
       
       // Read the current comments file
-      let commentsData = JSON.parse(fs.readFileSync(this.commentsPath, 'utf8'));
+      let commentsData = ContentSanitizer.safeReadJSON(this.commentsPath, { likeData: {} });
       
       // Load and add like-rank data if available
       const likeRankData = this.getLikeRankData();
@@ -109,7 +110,7 @@ class Comments {
       }
 
       // Convert back to string with the added like data
-      const fileContent = JSON.stringify(commentsData, null, 2);
+      const fileContent = ContentSanitizer.safeStringify(commentsData, 2);
       
       // Create form data
       const formData = new FormData();
@@ -198,19 +199,14 @@ class Comments {
     // Correctly parse timestamps as numbers
     const timestamp = typeof createTime === 'string' ? parseInt(createTime, 10) : createTime;
   
-    try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      data = JSON.parse(fileData);
-    } catch (error) {
-      console.error('Error reading comments file:', error);
-      data = { 
-        totalComments: 0, 
-        commenters: {},
-        commentsById: {}, // Use an object with msgId as keys instead of an array
-        commentsOrder: [], // Array of msgIds to maintain order
-        initTimestamp: this.initTimestamp // Add initialization timestamp to the data
-      };
-    }
+    // Read the current data from the file with safe parsing
+    data = ContentSanitizer.safeReadJSON(this.commentsPath, { 
+      totalComments: 0, 
+      commenters: {},
+      commentsById: {}, // Use an object with msgId as keys instead of an array
+      commentsOrder: [], // Array of msgIds to maintain order
+      initTimestamp: this.initTimestamp // Add initialization timestamp to the data
+    });
 
     // Ensure the necessary data structures exist
     if (!data.commentsById) {
@@ -326,7 +322,7 @@ class Comments {
     }
   
     // Write updated data back to file
-    fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+    fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(data, 2));
   }
 
   // Initialize or reset comments file
@@ -342,7 +338,7 @@ class Comments {
     try {
       // Ensure directory exists before writing
       this.ensureDirectoryExists();
-      fs.writeFileSync(this.commentsPath, JSON.stringify(initialData, null, 2));
+      fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(initialData, 2));
       console.log('Comments file has been initialized.');
     } catch (error) {
       console.error('Error initializing comments file:', error);
@@ -352,8 +348,12 @@ class Comments {
   // Get all comments
   getAllComments() {
     try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = ContentSanitizer.safeReadJSON(this.commentsPath, { 
+        totalComments: 0, 
+        commenters: {}, 
+        comments: [],
+        initTimestamp: this.initTimestamp 
+      });
       
       // Convert commentsById to array for backward compatibility
       let commentsArray = [];
@@ -410,13 +410,15 @@ class Comments {
   // Pin/unpin a comment
   togglePinComment(commentId, isPinned = true) {
     try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = ContentSanitizer.safeReadJSON(this.commentsPath, { 
+        commentsById: {}, 
+        comments: [] 
+      });
       
       // Check if we're using the new structure
       if (data.commentsById && data.commentsById[commentId]) {
         data.commentsById[commentId].isPinned = isPinned;
-        fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+        fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(data, 2));
         return true;
       } 
       // Backward compatibility with old structure
@@ -424,7 +426,7 @@ class Comments {
         const commentIndex = data.comments.findIndex(c => c.id === commentId);
         if (commentIndex !== -1) {
           data.comments[commentIndex].isPinned = isPinned;
-          fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+          fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(data, 2));
           return true;
         }
       }
@@ -438,13 +440,15 @@ class Comments {
   // Highlight/unhighlight a comment
   toggleHighlightComment(commentId, isHighlighted = true) {
     try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = ContentSanitizer.safeReadJSON(this.commentsPath, { 
+        commentsById: {}, 
+        comments: [] 
+      });
       
       // Check if we're using the new structure
       if (data.commentsById && data.commentsById[commentId]) {
         data.commentsById[commentId].isHighlighted = isHighlighted;
-        fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+        fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(data, 2));
         return true;
       } 
       // Backward compatibility with old structure
@@ -452,7 +456,7 @@ class Comments {
         const commentIndex = data.comments.findIndex(c => c.id === commentId);
         if (commentIndex !== -1) {
           data.comments[commentIndex].isHighlighted = isHighlighted;
-          fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+          fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(data, 2));
           return true;
         }
       }
@@ -506,8 +510,9 @@ class Comments {
     try {
       if (!msgId) return false;
       
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = ContentSanitizer.safeReadJSON(this.commentsPath, { 
+        commentsById: {} 
+      });
       
       // Check if using new structure
       if (data.commentsById) {

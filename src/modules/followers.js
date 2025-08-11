@@ -1,6 +1,7 @@
 // services/followers.js - Follower tracking service
 const fs = require('fs');
 const path = require('path');
+const ContentSanitizer = require('../utils/sanitizer');
 
 class FollowersService {
     constructor(config) {
@@ -25,7 +26,7 @@ class FollowersService {
         const initialData = { count: startingCount, ids: [] };
         
         try {
-            fs.writeFileSync(this.filePath, JSON.stringify(initialData, null, 2));
+            fs.writeFileSync(this.filePath, ContentSanitizer.safeStringify(initialData, 2));
             console.log('Follower count file initialized');
         } catch (error) {
             console.error('Error initializing follower count:', error);
@@ -39,15 +40,8 @@ class FollowersService {
      */
     updateFollowerCount(uniqueId) {
         let data;
-        try {
-            // Read the current data from the file
-            const fileData = fs.readFileSync(this.filePath, 'utf8');
-            data = JSON.parse(fileData);
-        } catch (error) {
-            // If the file doesn't exist or is invalid, start from default values
-            console.error('Error reading follower count:', error);
-            data = { count: 0, ids: [] };
-        }
+        // Read the current data from the file with safe parsing
+        data = ContentSanitizer.safeReadJSON(this.filePath, { count: 0, ids: [] });
         
         // Check if the unique ID already exists
         if (!data.ids.includes(uniqueId)) {
@@ -58,7 +52,7 @@ class FollowersService {
             data.count += 1;
             
             // Write the updated data back to the file
-            fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2));
+            fs.writeFileSync(this.filePath, ContentSanitizer.safeStringify(data, 2));
         }
         
         return data.count;
@@ -69,14 +63,9 @@ class FollowersService {
      * @returns {Promise<object>} The follower count data
      */
     async getFollowerCount() {
-        return new Promise((resolve, reject) => {
-            fs.readFile(this.filePath, 'utf8', (err, data) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(JSON.parse(data));
-                }
-            });
+        return new Promise((resolve) => {
+            const data = ContentSanitizer.safeReadJSON(this.filePath, { count: 0, ids: [] });
+            resolve(data);
         });
     }
 }

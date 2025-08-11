@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const ContentSanitizer = require('../utils/sanitizer');
 
 class LikeRank {
   constructor(config) {
@@ -27,13 +28,8 @@ class LikeRank {
   updateFromQueue(msg) {
     let data;
 
-    try {
-      const fileData = fs.readFileSync(this.likeRankPath, 'utf8');
-      data = JSON.parse(fileData);
-    } catch (error) {
-      console.error('Error reading like rank file:', error);
-      data = { totalLikes: 0, likers: {} };
-    }
+    // Read the current data from the file with safe parsing
+    data = ContentSanitizer.safeReadJSON(this.likeRankPath, { totalLikes: 0, likers: {} });
 
     const { uniqueId, likeCount, profilePictureUrl, nickname, msgId } = msg;
 
@@ -63,14 +59,13 @@ class LikeRank {
 
       liker.totalLikes += Math.round(likeCount * multiplier);
       data.totalLikes += Math.round(likeCount * multiplier);
-      fs.writeFileSync(this.likeRankPath, JSON.stringify(data, null, 2));
+      fs.writeFileSync(this.likeRankPath, ContentSanitizer.safeStringify(data, 2));
     }
   }
 
-getTopLikers(count) {
-  try {
-    const data = fs.readFileSync(this.likeRankPath, 'utf8');
-    const parsedData = JSON.parse(data);
+  getTopLikers(count) {
+    try {
+      const parsedData = ContentSanitizer.safeReadJSON(this.likeRankPath, { likers: {} });
 
     // Sort gifters by totalDiamonds in descending order and return top 3
     const topLikers = Object.values(parsedData.likers)
@@ -87,7 +82,7 @@ getTopLikers(count) {
     const initialData = { totalLikes: 0, likers: {} };
 
     try {
-      fs.writeFileSync(this.likeRankPath, JSON.stringify(initialData, null, 2));
+      fs.writeFileSync(this.likeRankPath, ContentSanitizer.safeStringify(initialData, 2));
       console.log('Like rank file has been reset.');
     } catch (error) {
       console.error('Error initializing like rank file:', error);
