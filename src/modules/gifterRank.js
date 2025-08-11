@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { safeReadJson, safeWriteJson } = require('../utils/safeJson');
 
 class GifterRank {
   constructor(config) {
@@ -70,7 +71,7 @@ class GifterRank {
       gifter.totalDiamonds += diamonds;
       data.totalDiamonds += diamonds;
 
-      fs.writeFileSync(this.gifterRankPath, JSON.stringify(data, null, 2));
+              safeWriteJson(this.gifterRankPath, data, 2);
     }
   }
 
@@ -101,7 +102,7 @@ class GifterRank {
     const initialData = { totalDiamonds: 0, gifters: {} };
 
     try {
-      fs.writeFileSync(this.gifterRankPath, JSON.stringify(initialData, null, 2));
+              safeWriteJson(this.gifterRankPath, initialData, 2);
       console.log('Gifter rank file has been reset.');
     } catch (error) {
       console.error('Error initializing gifter rank file:', error);

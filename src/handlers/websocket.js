@@ -11,7 +11,7 @@ function setupTikTokEventListeners(socket, tiktokConnectionWrapper, config) {
         socket.emit('tiktokConnected', state);
         
         // Use shared stream start handler
-        handleStreamStart('TikTok', config);
+        handleStreamStart('TikTok', config, socket);
     });
 
     // Disconnected event
@@ -22,7 +22,7 @@ function setupTikTokEventListeners(socket, tiktokConnectionWrapper, config) {
         socket.emit('streamEnd');
         
         // Use shared stream end handler
-        handleStreamEnd('TikTok', config);
+        handleStreamEnd('TikTok', config, socket);
     });
 
     // Room user event
@@ -124,7 +124,7 @@ function setupTikTokEventListeners(socket, tiktokConnectionWrapper, config) {
     // Stream end event from client
     socket.on('streamEnd', () => {
         // Use shared stream end handler
-        handleStreamEnd('Client', config);
+        handleStreamEnd('Client', config, socket);
     });
 }
 
@@ -135,7 +135,7 @@ function setupKickEventListeners(socket, kickConnectionWrapper, config) {
         socket.emit('kickConnected', state);
         
         // Use shared stream start handler
-        handleStreamStart('Kick', config);
+        handleStreamStart('Kick', config, socket);
     });
 
     // Disconnected event
@@ -183,7 +183,7 @@ function setupKickEventListeners(socket, kickConnectionWrapper, config) {
         socket.emit('streamEnded', msg);
         
         // Use shared stream end handler
-        handleStreamEnd('Kick', config);
+        handleStreamEnd('Kick', config, socket);
     });
 
     // Viewer count updates
@@ -200,7 +200,7 @@ function setupKickEventListeners(socket, kickConnectionWrapper, config) {
 // Shared stream start handler
 let streamStartHandled = false;
 
-function handleStreamStart(platform, config) {
+function handleStreamStart(platform, config, socket) {
     if (streamStartHandled) {
         console.log(`🔄 Stream start already handled by another platform, skipping ${platform}`);
         return;
@@ -226,7 +226,7 @@ function handleStreamStart(platform, config) {
 }
 
 // Shared stream end handler
-function handleStreamEnd(platform, config) {
+function handleStreamEnd(platform, config, socket) {
     console.log(`🛑 Stream end detected via ${platform} - executing cleanup logic...`);
     
     // Call the endStream API if enabled
@@ -240,9 +240,13 @@ function handleStreamEnd(platform, config) {
     services.comments.shutdown();
     console.log(`📝 Comments service shutdown via ${platform}`);
     
-    // Schedule auto-sleep
-    socket.emit('scheduleAutoSleep', { reason: `${platform} stream ended` });
-    console.log(`🛏️  Auto-sleep scheduled via ${platform}`);
+    // Schedule auto-sleep if socket is available
+    if (socket) {
+        socket.emit('scheduleAutoSleep', { reason: `${platform} stream ended` });
+        console.log(`🛏️  Auto-sleep scheduled via ${platform}`);
+    } else {
+        console.log(`⚠️  No socket available for auto-sleep scheduling via ${platform}`);
+    }
 }
 
 // Setup socket connection handlers

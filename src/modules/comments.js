@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { safeReadJson, safeWriteJson } = require('../utils/safeJson');
 const axios = require('axios');
 const FormData = require('form-data');
 
@@ -199,8 +200,7 @@ class Comments {
     const timestamp = typeof createTime === 'string' ? parseInt(createTime, 10) : createTime;
   
     try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      data = JSON.parse(fileData);
+      data = safeReadJson(this.commentsPath, { comments: [], viewerData: {} });
     } catch (error) {
       console.error('Error reading comments file:', error);
       data = { 
@@ -326,7 +326,7 @@ class Comments {
     }
   
     // Write updated data back to file
-    fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+    safeWriteJson(this.commentsPath, data, 2);
   }
 
   // Initialize or reset comments file
@@ -342,8 +342,11 @@ class Comments {
     try {
       // Ensure directory exists before writing
       this.ensureDirectoryExists();
-      fs.writeFileSync(this.commentsPath, JSON.stringify(initialData, null, 2));
-      console.log('Comments file has been initialized.');
+      if (safeWriteJson(this.commentsPath, initialData, 2)) {
+        console.log('Comments file has been initialized.');
+      } else {
+        console.error('Failed to initialize comments file');
+      }
     } catch (error) {
       console.error('Error initializing comments file:', error);
     }
@@ -352,8 +355,7 @@ class Comments {
   // Get all comments
   getAllComments() {
     try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = safeReadJson(this.commentsPath, { comments: [], viewerData: {} });
       
       // Convert commentsById to array for backward compatibility
       let commentsArray = [];
@@ -410,13 +412,12 @@ class Comments {
   // Pin/unpin a comment
   togglePinComment(commentId, isPinned = true) {
     try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = safeReadJson(this.commentsPath, { comments: [], viewerData: {} });
       
       // Check if we're using the new structure
       if (data.commentsById && data.commentsById[commentId]) {
         data.commentsById[commentId].isPinned = isPinned;
-        fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+        safeWriteJson(this.commentsPath, data, 2);
         return true;
       } 
       // Backward compatibility with old structure
@@ -438,13 +439,12 @@ class Comments {
   // Highlight/unhighlight a comment
   toggleHighlightComment(commentId, isHighlighted = true) {
     try {
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = safeReadJson(this.commentsPath, { comments: [], viewerData: {} });
       
       // Check if we're using the new structure
       if (data.commentsById && data.commentsById[commentId]) {
         data.commentsById[commentId].isHighlighted = isHighlighted;
-        fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+        safeWriteJson(this.commentsPath, data, 2);
         return true;
       } 
       // Backward compatibility with old structure
@@ -452,7 +452,7 @@ class Comments {
         const commentIndex = data.comments.findIndex(c => c.id === commentId);
         if (commentIndex !== -1) {
           data.comments[commentIndex].isHighlighted = isHighlighted;
-          fs.writeFileSync(this.commentsPath, JSON.stringify(data, null, 2));
+          safeWriteJson(this.commentsPath, data, 2);
           return true;
         }
       }
@@ -506,8 +506,7 @@ class Comments {
     try {
       if (!msgId) return false;
       
-      const fileData = fs.readFileSync(this.commentsPath, 'utf8');
-      const data = JSON.parse(fileData);
+      const data = safeReadJson(this.commentsPath, { comments: [], viewerData: {} });
       
       // Check if using new structure
       if (data.commentsById) {

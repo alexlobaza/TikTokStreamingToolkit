@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { safeReadJson, safeWriteJson } = require('../utils/safeJson');
 
 class LikeRank {
   constructor(config) {
@@ -63,7 +64,7 @@ class LikeRank {
 
       liker.totalLikes += Math.round(likeCount * multiplier);
       data.totalLikes += Math.round(likeCount * multiplier);
-      fs.writeFileSync(this.likeRankPath, JSON.stringify(data, null, 2));
+              safeWriteJson(this.likeRankPath, data, 2);
     }
   }
 
@@ -87,7 +88,7 @@ getTopLikers(count) {
     const initialData = { totalLikes: 0, likers: {} };
 
     try {
-      fs.writeFileSync(this.likeRankPath, JSON.stringify(initialData, null, 2));
+              safeWriteJson(this.likeRankPath, initialData, 2);
       console.log('Like rank file has been reset.');
     } catch (error) {
       console.error('Error initializing like rank file:', error);

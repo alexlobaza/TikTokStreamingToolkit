@@ -1,6 +1,7 @@
 // services/followers.js - Follower tracking service
 const fs = require('fs');
 const path = require('path');
+const { safeReadJson, safeWriteJson } = require('../utils/safeJson');
 
 class FollowersService {
     constructor(config) {
@@ -25,8 +26,11 @@ class FollowersService {
         const initialData = { count: startingCount, ids: [] };
         
         try {
-            fs.writeFileSync(this.filePath, JSON.stringify(initialData, null, 2));
-            console.log('Follower count file initialized');
+            if (safeWriteJson(this.filePath, initialData, 2)) {
+                console.log('Follower count file initialized');
+            } else {
+                console.error('Failed to initialize follower count file');
+            }
         } catch (error) {
             console.error('Error initializing follower count:', error);
         }
@@ -40,9 +44,8 @@ class FollowersService {
     updateFollowerCount(uniqueId) {
         let data;
         try {
-            // Read the current data from the file
-            const fileData = fs.readFileSync(this.filePath, 'utf8');
-            data = JSON.parse(fileData);
+            // Read the current data from the file safely
+            data = safeReadJson(this.filePath, { count: 0, ids: [] });
         } catch (error) {
             // If the file doesn't exist or is invalid, start from default values
             console.error('Error reading follower count:', error);
@@ -57,8 +60,10 @@ class FollowersService {
             // Increment the count
             data.count += 1;
             
-            // Write the updated data back to the file
-            fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2));
+            // Write the updated data back to the file safely
+            if (!safeWriteJson(this.filePath, data, 2)) {
+                console.error('Failed to write follower count data');
+            }
         }
         
         return data.count;
@@ -70,13 +75,12 @@ class FollowersService {
      */
     async getFollowerCount() {
         return new Promise((resolve, reject) => {
-            fs.readFile(this.filePath, 'utf8', (err, data) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(JSON.parse(data));
-                }
-            });
+            try {
+                const data = safeReadJson(this.filePath, { count: 0, ids: [] });
+                resolve(data);
+            } catch (error) {
+                reject(error);
+            }
         });
     }
 }

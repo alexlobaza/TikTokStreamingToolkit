@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { safeReadJson, safeWriteJson } = require('../utils/safeJson');
 
 class Viewers {
   constructor(config) {
@@ -66,7 +67,7 @@ class Viewers {
     fileData.totalUpdates++;
 
     // Write the updated data back to the file
-    fs.writeFileSync(this.viewersPath, JSON.stringify(fileData, null, 2));
+            safeWriteJson(this.viewersPath, fileData, 2);
   }
 
   initialize() {
@@ -77,7 +78,7 @@ class Viewers {
     
     try {
       this.ensureDirectoryExists();
-      fs.writeFileSync(this.viewersPath, JSON.stringify(initialData, null, 2));
+              safeWriteJson(this.viewersPath, initialData, 2);
       console.log('Viewers file has been reset.');
     } catch (error) {
       console.error('Error initializing viewers file:', error);
