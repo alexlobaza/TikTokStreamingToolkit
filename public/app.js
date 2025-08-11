@@ -33,6 +33,28 @@ class TikTokIOConnection {
                 this.socket.emit('streamEnd');
             }
         });
+
+        this.socket.on('tiktokConnectionAttempt', (data) => {
+            if (!data.success) {
+                Logger.ERROR("TikTok connection failed: %s", data.error);
+                // Don't retry if server is not running
+                if (data.error.includes('Server is not running')) {
+                    this.retryCount = 0; // Reset retry count
+                    this.firstConnect = true; // Allow future attempts when server starts
+                }
+            }
+        });
+
+        this.socket.on('kickConnectionAttempt', (data) => {
+            if (!data.success) {
+                Logger.ERROR("Kick connection failed: %s", data.error);
+                // Don't retry if server is not running
+                if (data.error.includes('Server is not running')) {
+                    this.retryCount = 0; // Reset retry count
+                    this.firstConnect = true; // Allow future attempts when server starts
+                }
+            }
+        });
     }
 
     connect(uniqueId, options) {
@@ -101,7 +123,30 @@ let Config = {
         });
     },
 
-    connectWithRetry() {
+    async connectWithRetry() {
+        // Check server status first
+        try {
+            const response = await fetch('/control/status');
+            const statusData = await response.json();
+            
+            if (statusData.status !== 'running') {
+                Logger.INFO("Server is not running (status: %s). Skipping TikTok connection.", statusData.status);
+                this.retryCount++;
+                
+                if (this.maxRetries === -1 || this.retryCount < this.maxRetries) {
+                    Logger.INFO("Retrying in 60 seconds...");
+                    setTimeout(() => this.connectWithRetry(), 60000); // Retry after 1 minute
+                } else {
+                    Logger.ERROR("Max retries reached. Stopping connection attempts.");
+                    this.firstConnect = true; // Reset for future attempts
+                    this.retryCount = 0;
+                }
+                return;
+            }
+        } catch (error) {
+            Logger.WARNING("Could not check server status, proceeding with connection attempt...");
+        }
+        
         // Use the new nested TikTok config structure
         const tiktokUniqueId = Config.tiktok?.uniqueId || Config["uniqueId"];
         Logger.INFO("Connecting to %s... (Attempt %d)", tiktokUniqueId, this.retryCount + 1);

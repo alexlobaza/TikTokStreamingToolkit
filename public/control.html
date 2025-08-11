@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Control Panel</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .control-panel { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 15px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 20px; 
+            margin: 25px 0; 
+            border-radius: 10px; 
+            font-weight: bold;
+            text-align: center;
+            font-size: 18px;
+        }
+        .status.running { 
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); 
+            color: #155724; 
+            border: 2px solid #28a745;
+        }
+        .status.stopped { 
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); 
+            color: #721c24; 
+            border: 2px solid #dc3545;
+        }
+        .btn { 
+            padding: 18px 35px; 
+            margin: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn-stop { 
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
+            color: white; 
+        }
+        .btn-start { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+            color: white; 
+        }
+        .btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .info { 
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); 
+            color: #0c5460; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin: 25px 0; 
+            border-left: 5px solid #17a2b8;
+        }
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .platform-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+        .platform-item.enabled {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        .platform-item.disabled {
+            border-color: #dc3545;
+            background: #fff8f8;
+        }
+        .api-key-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .api-key-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .api-key-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #f5c6cb;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #c3e6cb;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel">
+        <h1>🚀 Server Control Panel</h1>
+        
+        <div class="api-key-section">
+            <h3>🔐 Authentication</h3>
+            <p>Enter your API key to control the server:</p>
+            <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your API key...">
+            <button class="btn btn-start" onclick="authenticate()">🔑 Authenticate</button>
+        </div>
+        
+        <div id="mainContent" style="display: none;">
+            <div class="info" style="background: #d4edda; color: #155724; border: 1px solid #c3e6cb; text-align: center;">
+                <h3>🔐 Authenticated Successfully</h3>
+                <p>You are now controlling the server with your API key</p>
+            </div>
+            
+            <div class="status running" id="status">
+                ✅ Server is RUNNING and processing events
+            </div>
+            
+            <div class="info">
+                <h3>📊 Current Status</h3>
+                <div class="platform-grid" id="platformGrid">
+                    <!-- Platform status will be populated here -->
+                </div>
+                
+                <div id="autoSleepInfo" style="margin-top: 15px; text-align: center; display: none;">
+                    <h4>🛏️ Auto-Sleep Status</h4>
+                    <p id="autoSleepStatus">No auto-sleep scheduled</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button class="btn btn-stop" onclick="stopServer()" id="stopBtn">🛑 STOP Server</button>
+                <button class="btn btn-start" onclick="startServer()" id="startBtn" style="display: none;">▶️ START Server</button>
+            </div>
+            
+            <div class="info">
+                <h3>ℹ️ How it works</h3>
+                <ul style="text-align: left;">
+                    <li><strong>STOP:</strong> Disconnects all connections and stops processing events</li>
+                    <li><strong>START:</strong> Reconnects and resumes normal operation</li>
+                    <li>Server process stays alive, only connections are managed</li>
+                    <li>Perfect for starting/stopping when streams begin/end</li>
+                    <li><strong>🛏️ Auto-Sleep:</strong> Automatically stops server 1 minute after stream ends</li>
+                </ul>
+            </div>
+            
+            <div class="info">
+                <h3>🔍 Quick Actions</h3>
+                <button class="btn" onclick="checkStatus()" style="background: #6c757d; color: white;">📊 Check Status</button>
+                <button class="btn" onclick="checkHealth()" style="background: #17a2b8; color: white;">❤️ Health Check</button>
+                <button class="btn" onclick="logout()" style="background: #dc3545; color: white;">🚪 Logout</button>
+            </div>
+        </div>
+        
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="successMessage" class="success" style="display: none;"></div>
+    </div>
+    
+    <script>
+        let apiKey = '';
+        let isAuthenticated = false;
+        
+        // Check if API key is stored in localStorage
+        const storedApiKey = localStorage.getItem('serverControlApiKey');
+        if (storedApiKey) {
+            document.getElementById('apiKey').value = storedApiKey;
+            // Don't auto-authenticate, let user click the button
+        }
+        
+        // Add logout functionality
+        function logout() {
+            isAuthenticated = false;
+            localStorage.removeItem('serverControlApiKey');
+            
+            // Show authentication section
+            const authSection = document.querySelector('.api-key-section');
+            if (authSection) {
+                authSection.style.display = 'block';
+            }
+            
+            // Reset API key input
+            document.getElementById('apiKey').value = '';
+            
+            // Hide main content
+            document.getElementById('mainContent').style.display = 'none';
+            
+            showMessage('Logged out successfully', 'success');
+        }
+        
+        function showMessage(message, type) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            if (type === 'error') {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+                setTimeout(() => errorDiv.style.display = 'none', 5000);
+            } else {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+                setTimeout(() => successDiv.style.display = 'none', 3000);
+            }
+        }
+        
+        async function authenticate() {
+            apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                showMessage('Please enter an API key', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/control/status', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                if (response.ok) {
+                    isAuthenticated = true;
+                    localStorage.setItem('serverControlApiKey', apiKey);
+                    document.getElementById('mainContent').style.display = 'block';
+                    document.getElementById('apiKey').style.display = 'none';
+                    
+                    // Hide the entire authentication section
+                    const authSection = document.querySelector('.api-key-section');
+                    if (authSection) {
+                        authSection.style.display = 'none';
+                    }
+                    
+                    showMessage('Authentication successful!', 'success');
+                    updateStatus();
+                } else {
+                    showMessage('Invalid API key', 'error');
+                }
+            } catch (error) {
+                showMessage('Authentication failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function updateStatus() {
+            try {
+                const response = await fetch('/control/status', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatusDisplay(data);
+                    updatePlatformGrid(data);
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+        
+        function updateStatusDisplay(data) {
+            const statusDiv = document.getElementById('status');
+            const stopBtn = document.getElementById('stopBtn');
+            const startBtn = document.getElementById('startBtn');
+            
+            if (data.status === 'running') {
+                statusDiv.className = 'status running';
+                statusDiv.innerHTML = '✅ Server is RUNNING and processing events';
+                
+                // Show stop button, hide start button
+                stopBtn.style.display = 'inline-block';
+                startBtn.style.display = 'none';
+            } else {
+                statusDiv.className = 'status stopped';
+                statusDiv.innerHTML = '🔴 Server is STOPPED - no events processed';
+                
+                // Hide stop button, show start button
+                stopBtn.style.display = 'none';
+                startBtn.style.display = 'inline-block';
+            }
+        }
+        
+        function updatePlatformGrid(data) {
+            const grid = document.getElementById('platformGrid');
+            grid.innerHTML = `
+                <div class="platform-item ${data.connections.tiktok !== 'disabled' ? 'enabled' : 'disabled'}">
+                    <h4>🎵 TikTok</h4>
+                    <p>${data.connections.tiktok === 'disabled' ? '🔴 Disabled' : 
+                          data.connections.tiktok === 'connected' ? '🟢 Connected' : '🟡 Disconnected'}</p>
+                </div>
+                <div class="platform-item ${data.connections.kick !== 'disabled' ? 'enabled' : 'disabled'}">
+                    <h4>🥊 Kick</h4>
+                    <p>${data.connections.kick === 'disabled' ? '🔴 Disabled' : 
+                          data.connections.kick === 'subscribed' ? '🟢 Subscribed' : '🟡 Unsubscribed'}</p>
+                </div>
+                <div class="platform-item ${data.connections.youtube !== 'disabled' ? 'enabled' : 'disabled'}">
+                    <h4>📺 YouTube</h4>
+                    <p>${data.connections.youtube === 'disabled' ? '🔴 Disabled' : 
+                          data.connections.youtube === 'connected' ? '🟢 Connected' : '🟡 Disconnected'}</p>
+                </div>
+            `;
+            
+            // Update auto-sleep status
+            updateAutoSleepStatus(data.autoSleep);
+        }
+        
+        function updateAutoSleepStatus(autoSleep) {
+            const autoSleepInfo = document.getElementById('autoSleepInfo');
+            const autoSleepStatus = document.getElementById('autoSleepStatus');
+            
+            if (autoSleep.scheduled) {
+                autoSleepInfo.style.display = 'block';
+                autoSleepStatus.innerHTML = '🕐 Auto-sleep scheduled - server will stop in ~1 minute';
+                autoSleepStatus.style.color = '#856404';
+            } else {
+                autoSleepInfo.style.display = 'none';
+            }
+        }
+        
+        async function stopServer() {
+            if (!isAuthenticated) return;
+            
+            try {
+                setLoading(true);
+                const response = await fetch('/control/stop', {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage('Server stopped successfully!', 'success');
+                    updateStatus();
+                    
+                    // Update button states immediately
+                    document.getElementById('stopBtn').style.display = 'none';
+                    document.getElementById('startBtn').style.display = 'inline-block';
+                } else {
+                    const error = await response.json();
+                    showMessage('Error stopping server: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error stopping server: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        async function startServer() {
+            if (!isAuthenticated) return;
+            
+            try {
+                setLoading(true);
+                const response = await fetch('/control/start', {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage('Server started successfully!', 'success');
+                    updateStatus();
+                    
+                    // Update button states immediately
+                    document.getElementById('stopBtn').style.display = 'inline-block';
+                    document.getElementById('startBtn').style.display = 'none';
+                } else {
+                    const error = await response.json();
+                    showMessage('Error starting server: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error starting server: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        async function checkStatus() {
+            if (!isAuthenticated) return;
+            await updateStatus();
+            showMessage('Status updated!', 'success');
+        }
+        
+        async function checkHealth() {
+            if (!isAuthenticated) return;
+            
+            try {
+                const response = await fetch('/health', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                if (response.ok) {
+                    const health = await response.json();
+                    showMessage(`Health: ${health.status}, Uptime: ${Math.round(health.uptime)}s`, 'success');
+                } else {
+                    showMessage('Health check failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Health check error: ' + error.message, 'error');
+            }
+        }
+        
+        function setLoading(loading) {
+            const stopBtn = document.getElementById('stopBtn');
+            const startBtn = document.getElementById('startBtn');
+            
+            if (loading) {
+                stopBtn.innerHTML = '<span class="spinner"></span>Stopping...';
+                startBtn.innerHTML = '<span class="spinner"></span>Starting...';
+                stopBtn.classList.add('loading');
+                startBtn.classList.add('loading');
+            } else {
+                stopBtn.innerHTML = '🛑 STOP Server';
+                startBtn.innerHTML = '▶️ START Server';
+                stopBtn.classList.remove('loading');
+                startBtn.classList.remove('loading');
+            }
+        }
+        
+        // Auto-refresh status every 30 seconds
+        setInterval(() => {
+            if (isAuthenticated) {
+                updateStatus();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

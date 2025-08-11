@@ -107,6 +107,9 @@ try {
             showPlatformIndicators: process.env.SHOW_PLATFORM_INDICATORS !== 'false' && (sampleConfig.display?.showPlatformIndicators !== false),
             platformIndicatorStyle: process.env.PLATFORM_INDICATOR_STYLE || sampleConfig.display?.platformIndicatorStyle || 'subtle'
         },
+        security: {
+            apiKey: process.env.API_KEY || sampleConfig.security?.apiKey || 'your-secure-api-key-here'
+        },
         sounds: {
             gift: {
                 default: {

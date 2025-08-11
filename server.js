@@ -19,6 +19,82 @@ const KickOAuthHandler = require('./src/services/kickOAuthHandler');
 const apiRoutes = require('./api');
 const setupSocketHandlers = require('./src/handlers/websocket');
 
+// Global server status tracking
+global.serverStatus = 'running';
+global.serverIntervals = {};
+
+// Auto-sleep functionality
+function scheduleAutoSleep(reason = 'Stream ended') {
+    console.log(`🛏️  Scheduling auto-sleep in 1 minute (${reason})...`);
+    
+    // Clear any existing auto-sleep timer
+    if (global.autoSleepTimer) {
+        clearTimeout(global.autoSleepTimer);
+    }
+    
+    // Set new auto-sleep timer (1 minute = 60000ms)
+    global.autoSleepTimer = setTimeout(() => {
+        console.log('🛏️  Auto-sleep timer expired - putting server to sleep...');
+        
+        // Only auto-sleep if server is currently running
+        if (global.serverStatus === 'running') {
+            // Stop all connections
+            try {
+                // Stop Kick webhook handler
+                if (kickWebhookHandler) {
+                    kickWebhookHandler.emit('stop');
+                    console.log('✅ Kick webhook handler stopped (auto-sleep)');
+                }
+                
+                // Clear any active intervals or timers
+                if (global.serverIntervals) {
+                    Object.values(global.serverIntervals).forEach(interval => clearInterval(interval));
+                    global.serverIntervals = {};
+                    console.log('✅ All intervals cleared (auto-sleep)');
+                }
+                
+                // Update server status
+                global.serverStatus = 'stopped';
+                
+                // Reset stream start flag for next stream
+                global.streamStartHandled = false;
+                console.log('🛏️  Server is now sleeping (auto-sleep)');
+                
+            } catch (error) {
+                console.error('❌ Error during auto-sleep:', error);
+            }
+        } else {
+            console.log('🛏️  Server already stopped, skipping auto-sleep');
+        }
+        
+        // Clear the timer reference
+        global.autoSleepTimer = null;
+        
+    }, 60000); // 1 minute
+    
+    console.log('🛏️  Auto-sleep scheduled successfully');
+}
+
+// API Key authentication middleware
+function authenticateApiKey(req, res, next) {
+    const apiKey = req.headers['x-api-key'];
+    const expectedApiKey = config.security?.apiKey;
+    
+    if (!expectedApiKey || expectedApiKey === 'your-secure-api-key-here') {
+        console.warn('⚠️  No API key configured - control endpoints are open!');
+        return next();
+    }
+    
+    if (!apiKey || apiKey !== expectedApiKey) {
+        return res.status(401).json({
+            success: false,
+            error: 'Invalid or missing API key'
+        });
+    }
+    
+    next();
+}
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -49,6 +125,14 @@ app.use((req, res, next) => {
 });
 
 setupSocketHandlers(io, config);
+
+// Handle auto-sleep events from clients
+io.on('connection', (socket) => {
+    socket.on('scheduleAutoSleep', (data) => {
+        console.log('🛏️  Auto-sleep requested by client:', data.reason);
+        scheduleAutoSleep(data.reason);
+    });
+});
 
 // Load API routes
 app.use('/api', apiRoutes);
@@ -181,6 +265,9 @@ if (config.kick?.enabled) {
     kickWebhookHandler.on('streamEnded', (event) => {
         console.log('📺 Forwarding Kick stream ended event to frontend');
         io.emit('streamEnded', event);
+        
+        // Schedule auto-sleep in 1 minute
+        scheduleAutoSleep('Kick stream ended');
     });
 
     console.log('✅ Kick webhook handler initialized and connected to Socket.IO');
@@ -201,6 +288,125 @@ app.post('/webhook/kick', express.json(), (req, res) => {
     } else {
         res.status(500).json({ error: 'Kick webhook handler not initialized' });
     }
+});
+
+// Server Control Endpoints
+app.get('/control', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'control.html'));
+});
+
+app.post('/control/stop', authenticateApiKey, (req, res) => {
+    console.log('🛑 STOP command received - stopping all connections...');
+    
+    try {
+        // Stop Kick webhook handler
+        if (kickWebhookHandler) {
+            kickWebhookHandler.emit('stop');
+            console.log('✅ Kick webhook handler stopped');
+        }
+        
+        // Clear any active intervals or timers
+        if (global.serverIntervals) {
+            Object.values(global.serverIntervals).forEach(interval => clearInterval(interval));
+            global.serverIntervals = {};
+            console.log('✅ All intervals cleared');
+        }
+        
+        // Update server status
+        global.serverStatus = 'stopped';
+        
+        // Reset stream start flag when stopping
+        global.streamStartHandled = false;
+        
+        res.json({ 
+            success: true, 
+            message: 'Server stopped successfully',
+            status: 'stopped',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error stopping server:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+app.post('/control/start', authenticateApiKey, (req, res) => {
+    console.log('▶️ START command received - restarting all connections...');
+    
+    try {
+        // Start Kick webhook handler
+        if (config.kick?.enabled && kickWebhookHandler) {
+            kickWebhookHandler.emit('start');
+            console.log('✅ Kick webhook handler started');
+        }
+        
+        // Update server status
+        global.serverStatus = 'running';
+        
+        // Reset stream start flag when starting
+        global.streamStartHandled = false;
+        
+        // Clear any existing auto-sleep timer when manually starting
+        if (global.autoSleepTimer) {
+            clearTimeout(global.autoSleepTimer);
+            global.autoSleepTimer = null;
+            console.log('🛏️  Auto-sleep timer cleared (manual start)');
+        }
+        
+        // Reset all data files for fresh start
+        console.log('🔄 Resetting all data files for fresh stream...');
+        viewers.initialize();
+        gifterRank.initialize();
+        likeRank.initialize();
+        comments.initialize();
+        followers.initialize();
+        console.log('✅ All data files reset successfully');
+        
+        res.json({ 
+            success: true, 
+            message: 'Server started successfully with fresh data',
+            status: 'running',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error starting server:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+app.get('/control/status', authenticateApiKey, (req, res) => {
+    res.json({
+        status: global.serverStatus || 'running',
+        timestamp: new Date().toISOString(),
+        connections: {
+            tiktok: config.tiktok?.enabled ? (global.serverStatus === 'running' ? 'connected' : 'disconnected') : 'disabled',
+            kick: config.kick?.enabled ? (global.serverStatus === 'running' ? 'subscribed' : 'unsubscribed') : 'disabled',
+            youtube: config.youtube?.enabled ? (global.serverStatus === 'running' ? 'connected' : 'disabled') : 'disabled'
+        },
+        autoSleep: {
+            scheduled: global.autoSleepTimer !== null && global.autoSleepTimer !== undefined,
+            timer: global.autoSleepTimer ? 'active' : 'none'
+        }
+    });
+});
+
+// Health check endpoint
+app.get('/health', authenticateApiKey, (req, res) => {
+    res.json({
+        status: 'healthy',
+        serverStatus: global.serverStatus || 'running',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+    });
 });
 
 viewers.initialize();

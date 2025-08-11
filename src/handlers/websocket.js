@@ -9,16 +9,9 @@ function setupTikTokEventListeners(socket, tiktokConnectionWrapper, config) {
     // Connected event
     tiktokConnectionWrapper.once('connected', state => {
         socket.emit('tiktokConnected', state);
-
-        // Call the startStream API if enabled
-        if (config.apiCalls.startStream && config.apiCalls.startStream.enabled) {
-            apiClient.callApi(config.apiCalls.startStream.endpoint, config)
-                .then(result => console.log('Stream start notification sent:', result));
-        }
-
-        if (services.comments.isOffsiteSyncEnabled()) {
-            services.comments.startOffsiteSync();
-        }
+        
+        // Use shared stream start handler
+        handleStreamStart('TikTok', config);
     });
 
     // Disconnected event
@@ -27,13 +20,9 @@ function setupTikTokEventListeners(socket, tiktokConnectionWrapper, config) {
     // Stream end event
     tiktokConnectionWrapper.connection.on('streamEnd', () => {
         socket.emit('streamEnd');
-
-        // Call the endStream API if enabled
-        if (config.apiCalls.endStream && config.apiCalls.endStream.enabled) {
-            apiClient.callApi(config.apiCalls.endStream.endpoint, config)
-                .then(result => console.log('Stream end notification sent:', result));
-            services.comments.shutdown();
-        }
+        
+        // Use shared stream end handler
+        handleStreamEnd('TikTok', config);
     });
 
     // Room user event
@@ -134,11 +123,8 @@ function setupTikTokEventListeners(socket, tiktokConnectionWrapper, config) {
 
     // Stream end event from client
     socket.on('streamEnd', () => {
-        // Call the endStream API if enabled
-        if (config.apiCalls.endStream && config.apiCalls.endStream.enabled) {
-            apiClient.callApi(config.apiCalls.endStream.endpoint, config)
-                .then(result => console.log('Stream end notification sent:', result));
-        }
+        // Use shared stream end handler
+        handleStreamEnd('Client', config);
     });
 }
 
@@ -147,16 +133,9 @@ function setupKickEventListeners(socket, kickConnectionWrapper, config) {
     // Connected event
     kickConnectionWrapper.once('connected', state => {
         socket.emit('kickConnected', state);
-
-        // Call the startStream API if enabled
-        if (config.apiCalls.startStream && config.apiCalls.startStream.enabled) {
-            apiClient.callApi(config.apiCalls.startStream.endpoint, config)
-                .then(result => console.log('Kick stream start notification sent:', result));
-        }
-
-        if (services.comments.isOffsiteSyncEnabled()) {
-            services.comments.startOffsiteSync();
-        }
+        
+        // Use shared stream start handler
+        handleStreamStart('Kick', config);
     });
 
     // Disconnected event
@@ -202,6 +181,9 @@ function setupKickEventListeners(socket, kickConnectionWrapper, config) {
 
     kickConnectionWrapper.on('streamEnded', msg => {
         socket.emit('streamEnded', msg);
+        
+        // Use shared stream end handler
+        handleStreamEnd('Kick', config);
     });
 
     // Viewer count updates
@@ -215,6 +197,54 @@ function setupKickEventListeners(socket, kickConnectionWrapper, config) {
     });
 }
 
+// Shared stream start handler
+let streamStartHandled = false;
+
+function handleStreamStart(platform, config) {
+    if (streamStartHandled) {
+        console.log(`🔄 Stream start already handled by another platform, skipping ${platform}`);
+        return;
+    }
+    
+    console.log(`🚀 Stream start detected via ${platform} - executing startup logic...`);
+    streamStartHandled = true;
+    
+    // Call the startStream API if enabled
+    if (config.apiCalls.startStream && config.apiCalls.startStream.enabled) {
+        apiClient.callApi(config.apiCalls.startStream.endpoint, config)
+            .then(result => console.log(`${platform} stream start notification sent:`, result))
+            .catch(error => console.error(`Error sending ${platform} stream start notification:`, error));
+    }
+    
+    // Start offsite sync if enabled
+    if (services.comments.isOffsiteSyncEnabled()) {
+        services.comments.startOffsiteSync();
+        console.log(`📡 Offsite sync started via ${platform}`);
+    }
+    
+    console.log(`✅ Stream start logic completed via ${platform}`);
+}
+
+// Shared stream end handler
+function handleStreamEnd(platform, config) {
+    console.log(`🛑 Stream end detected via ${platform} - executing cleanup logic...`);
+    
+    // Call the endStream API if enabled
+    if (config.apiCalls.endStream && config.apiCalls.endStream.enabled) {
+        apiClient.callApi(config.apiCalls.endStream.endpoint, config)
+            .then(result => console.log(`${platform} stream end notification sent:`, result))
+            .catch(error => console.error(`Error sending ${platform} stream end notification:`, error));
+    }
+    
+    // Shutdown comments service
+    services.comments.shutdown();
+    console.log(`📝 Comments service shutdown via ${platform}`);
+    
+    // Schedule auto-sleep
+    socket.emit('scheduleAutoSleep', { reason: `${platform} stream ended` });
+    console.log(`🛏️  Auto-sleep scheduled via ${platform}`);
+}
+
 // Setup socket connection handlers
 function setupSocketHandlers(io, config) {
     io.on('connection', (socket) => {
@@ -222,6 +252,9 @@ function setupSocketHandlers(io, config) {
         let tiktokConnectionWrapper;
         let kickConnectionWrapper;
 
+        // Reset stream start flag for new connections
+        streamStartHandled = false;
+        
         // Connect to TikTok with retry mechanism
         function connectTikTokWithRetry(uniqueId, options, retryCount = 0) {
             try {
@@ -248,6 +281,9 @@ function setupSocketHandlers(io, config) {
         // Connect to Kick with retry mechanism
         function connectKickWithRetry(channelName, appKey, appSecret, retryCount = 0) {
             try {
+                // Reset stream start flag for new Kick connections too
+                streamStartHandled = false;
+                
                 kickConnectionWrapper = new services.kick.KickConnectionWrapper(channelName, appKey, appSecret, {}, true);
                 kickConnectionWrapper.connect();
                 
@@ -278,6 +314,15 @@ function setupSocketHandlers(io, config) {
                 return;
             }
 
+            // Check if server is running
+            if (global.serverStatus !== 'running') {
+                socket.emit('tiktokConnectionAttempt', { 
+                    success: false, 
+                    error: 'Server is not running. Please start the server first.' 
+                });
+                return;
+            }
+
             // Prohibit the client from specifying these options (for security reasons)
             if (typeof options === 'object') {
                 delete options.requestOptions;
@@ -299,6 +344,15 @@ function setupSocketHandlers(io, config) {
                 socket.emit('kickConnectionAttempt', { 
                     success: false, 
                     error: 'Kick is disabled in configuration' 
+                });
+                return;
+            }
+
+            // Check if server is running
+            if (global.serverStatus !== 'running') {
+                socket.emit('kickConnectionAttempt', { 
+                    success: false, 
+                    error: 'Server is not running. Please start the server first.' 
                 });
                 return;
             }
