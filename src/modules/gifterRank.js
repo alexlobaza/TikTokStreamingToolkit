@@ -27,8 +27,15 @@ class GifterRank {
   // Actual update logic moved into this function
   updateFromQueue(msg) {
     let data;
-
-    const { uniqueId, nickname, profilePictureUrl, diamondCount, msgId, repeatCount, repeatEnd, giftType } = msg;
+    
+    const uniqueId = msg.user.uniqueId;
+    const nickname = msg.user.nickname;
+    const profilePictureUrl = msg.user.profilePictureUrl;
+    const diamondCount = msg.giftDetails.diamondCount;
+    const msgId = msg.common.msgId;
+    const repeatCount = msg.repeatCount;
+    const repeatEnd = msg.repeatEnd;
+    const giftType = msg.giftDetails.giftType;
 
     if (repeatEnd == false && giftType == 1) {
       return;

@@ -134,7 +134,7 @@ class Announcement {
     }
 
     static #cleanUniqueId(uniqueId) {
-        let chars = [...uniqueId];
+        let chars = [uniqueId];
         let result = [];
         
         for (let i = 0; i < chars.length; i++) {
@@ -177,6 +177,8 @@ class Announcement {
     }
 
     static addToQueue(announcement) {
+        console.log("Adding to queue");
+        console.log(announcement);
         this.#queue.push(announcement);
         this.#processQueue();
     }
@@ -257,15 +259,20 @@ connection.on('gift', (data) => {
         return;
     }
 
-    if (data["giftType"] === 1 && !data["repeatEnd"]) {
+    dataSubset = data["giftDetails"]
+    dataSubset["nickname"] = data["user"]["nickname"];
+    dataSubset["repeatEnd"] = data["repeatEnd"];
+    dataSubset["repeatCount"] = data["repeatCount"];
+
+    if (dataSubset["giftType"] === 1 && !dataSubset["repeatEnd"]) {
         return;
     }
 
     let announcement = new Announcement(
-        data["nickname"],
-        data["giftPictureUrl"],
-        `sent ${data["repeatCount"]}x ${data["giftName"]}`,
-        Config["sounds"]["gift"][data["giftName"].toLowerCase()] || Config["sounds"]["gift"]["default"],
+        dataSubset["nickname"],
+        dataSubset["giftImage"]['url'][0],
+        `sent ${dataSubset["repeatCount"]}x ${dataSubset["giftName"]}`,
+        Config["sounds"]["gift"][dataSubset["giftName"].toLowerCase()] || Config["sounds"]["gift"]["default"],
         false,
         'gift'
     );
@@ -276,9 +283,7 @@ connection.on('gift', (data) => {
 
 const followed = {}
 
-
 connection.on("social", (data) => {
-
     if (!Config["enabled"]["follow"]) {
         return;
     }
@@ -307,7 +312,7 @@ connection.on("social", (data) => {
     Announcement.addToQueue(announcement);
 
     // Emit a custom event for new follower
-    connection.socket.emit('newFollower', { uniqueId: data["uniqueId"] });
+    connection.socket.emit('newFollower', { data });
 
 })
 

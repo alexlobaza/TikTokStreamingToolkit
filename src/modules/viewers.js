@@ -36,6 +36,7 @@ class Viewers {
   // Actual update logic moved into this function
   updateFromQueue(data) {
     let fileData;
+    
     // Read the current data from the file with safe parsing
     fileData = ContentSanitizer.safeReadJSON(this.viewersPath, { 
       entries: {},

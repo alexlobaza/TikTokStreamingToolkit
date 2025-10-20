@@ -1,5 +1,6 @@
 // websocket/handlers.js - Socket.io event handlers
 const { getGlobalConnectionCount } = require('../services/tiktok');
+const { WebcastEvent } = require('tiktok-live-connector');
 const services = require('../services');
 const apiClient = require('../utils/apiClient');
 
@@ -24,7 +25,7 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     tiktokConnectionWrapper.once('disconnected', reason => socket.emit('tiktokDisconnected', reason));
 
     // Stream end event
-    tiktokConnectionWrapper.connection.on('streamEnd', () => {
+    tiktokConnectionWrapper.connection.on(WebcastEvent.STREAM_END, () => {
         socket.emit('streamEnd');
 
         // Call the endStream API if enabled
@@ -36,7 +37,7 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     });
 
     // Room user event
-    tiktokConnectionWrapper.connection.on('roomUser', msg => {
+    tiktokConnectionWrapper.connection.on(WebcastEvent.ROOM_USER, msg => {
         socket.emit('roomUser', msg);
         services.viewers.update({
             viewerCount: msg.viewerCount,
@@ -46,16 +47,16 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     });
 
     // Member event
-    tiktokConnectionWrapper.connection.on('member', msg => socket.emit('member', msg));
+    tiktokConnectionWrapper.connection.on(WebcastEvent.MEMBER, msg => socket.emit('member', msg));
     
     // Chat event
-    tiktokConnectionWrapper.connection.on('chat', msg => { 
+    tiktokConnectionWrapper.connection.on(WebcastEvent.CHAT, msg => { 
         socket.emit('chat', msg);
         services.comments.update(msg);
     });
 
     // Gift event
-    tiktokConnectionWrapper.connection.on('gift', msg => {
+    tiktokConnectionWrapper.connection.on(WebcastEvent.GIFT, msg => {
         socket.emit('gift', msg);
         services.gifterRank.update(msg);
 
@@ -73,7 +74,7 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     });
 
     // Social event
-    tiktokConnectionWrapper.connection.on('social', msg => {
+    tiktokConnectionWrapper.connection.on(WebcastEvent.SOCIAL, msg => {
         socket.emit('social', msg);
         
         // Only add shares (type = 3)
@@ -89,16 +90,16 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     });
     
     // Like event
-    tiktokConnectionWrapper.connection.on('like', msg => {
+    tiktokConnectionWrapper.connection.on(WebcastEvent.LIKE, msg => {
         socket.emit('like', msg);
         services.likeRank.update(msg);
     });
 
     // Other events
-    tiktokConnectionWrapper.connection.on('questionNew', msg => socket.emit('questionNew', msg));
-    tiktokConnectionWrapper.connection.on('linkMicBattle', msg => socket.emit('linkMicBattle', msg));
-    tiktokConnectionWrapper.connection.on('linkMicArmies', msg => socket.emit('linkMicArmies', msg));
-    tiktokConnectionWrapper.connection.on('liveIntro', msg => socket.emit('liveIntro', msg));
+    tiktokConnectionWrapper.connection.on(WebcastEvent.QUESTION_NEW, msg => socket.emit('questionNew', msg));
+    tiktokConnectionWrapper.connection.on(WebcastEvent.LINK_MIC_BATTLE, msg => socket.emit('linkMicBattle', msg));
+    tiktokConnectionWrapper.connection.on(WebcastEvent.LINK_MIC_ARMIES, msg => socket.emit('linkMicArmies', msg));
+    tiktokConnectionWrapper.connection.on(WebcastEvent.LIVE_INTRO, msg => socket.emit('liveIntro', msg));
     
     // Subscribe event
     tiktokConnectionWrapper.connection.on('subscribe', msg => {
@@ -116,13 +117,13 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
 
     // New follower event
     socket.on('newFollower', (data) => {
-        const newCount = services.followers.updateFollowerCount(data.uniqueId);
+        services.followers.updateFollowerCount(data.user.uniqueId);
         
         // Add to comments
         const followComment = {
-            uniqueId: data.uniqueId,
-            nickname: data.nickname || data.uniqueId,
-            profilePictureUrl: data.profilePictureUrl || '',
+            uniqueId: data.user.uniqueId,
+            nickname: data.user.nickname || data.user.uniqueId,
+            profilePictureUrl: data.user.profilePicture["url"][0] || '',
             comment: 'Followed the channel',
             isFollow: true,
             eventType: 'follow',

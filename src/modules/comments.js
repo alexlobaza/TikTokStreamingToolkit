@@ -176,25 +176,21 @@ class Comments {
     // Check if this is a special event (gift, follow, share, or subscribe)
     const isSpecialEvent = msg.isGift || msg.isShare || msg.isSubscribe || msg.isFollow;
     const eventType = msg.eventType || 'chat';
-    
-    // Extract relevant fields from the message
-    const { 
-      uniqueId, 
-      nickname, 
-      profilePictureUrl, 
-      comment, 
-      userId, 
-      createTime, 
-      followRole,
-      teamMemberLevel, 
-      followInfo, 
-      userDetails, 
-      isModerator, 
-      isSubscriber,
-      isNewGifter,
-      isNewSubscriber,
-      msgId  // Extract the msgId for duplicate checking
-    } = msg;
+
+    const uniqueId = msg.user.uniqueId;
+    const nickname = msg.user.nickname;
+    const profilePictureUrl = msg.user.profilePicture['url'][0];
+    const comment = msg.comment;
+    const createTime = msg.common.createTime;
+    const followRole = msg.userRole;
+    const teamMemberLevel = msg.user.userHonor.level;
+    const followInfo = msg.user.followInfo;
+    const userDetails = msg.user;
+    const isModerator = msg.userIdentity.isModeratorOfAnchor;
+    const isSubscriber = msg.userIdentity.isSubscriberOfAnchor;
+    const isNewGifter = msg.userIdentity.isNewGifterOfAnchor;
+    const isNewSubscriber = msg.userIdentity.isNewSubscriberOfAnchor;
+    const msgId = msg.common.msgId;
     
     // Correctly parse timestamps as numbers
     const timestamp = typeof createTime === 'string' ? parseInt(createTime, 10) : createTime;
@@ -284,7 +280,7 @@ class Comments {
       isNewGifter: !!isNewGifter,
       isNewSubscriber: !!isNewSubscriber,
       userRole: followRole || 'none',
-      teamMemberLevel: msg.teamMemberLevel || 0,
+      teamMemberLevel: teamMemberLevel || 0,
       userDetails: userDetails || {},
       followInfo: followInfo || {},
       // Add event-specific properties

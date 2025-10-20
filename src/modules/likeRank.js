@@ -28,10 +28,14 @@ class LikeRank {
   updateFromQueue(msg) {
     let data;
 
+    const uniqueId = msg.user.uniqueId;
+    const nickname = msg.user.nickname;
+    const profilePictureUrl = msg.user.profilePicture["url"][0];
+    const likeCount = msg.likeCount;
+    const msgId = msg.common.msgId;
+
     // Read the current data from the file with safe parsing
     data = ContentSanitizer.safeReadJSON(this.likeRankPath, { totalLikes: 0, likers: {} });
-
-    const { uniqueId, likeCount, profilePictureUrl, nickname, msgId } = msg;
 
     if (this.config.likeRank.excludeUsers.includes(uniqueId)) {
       return;
