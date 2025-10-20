@@ -232,11 +232,17 @@ body {
     background-color: rgba(147, 196, 125, 0.1);
 }
 
+.comment-card.event-superFan {
+    border-left-color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
 /* Ensure proper theming for dark mode */
 [data-theme="dark"] .comment-card.event-gift,
 [data-theme="dark"] .comment-card.event-share,
 [data-theme="dark"] .comment-card.event-subscribe,
-[data-theme="dark"] .comment-card.event-follow {
+[data-theme="dark"] .comment-card.event-follow,
+[data-theme="dark"] .comment-card.event-superFan {
     background-color: rgba(0, 0, 0, 0.2);
 }
 

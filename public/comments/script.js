@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const followsCommentsContainer = document.getElementById('followsComments');
     const subscribesCommentsContainer = document.getElementById('subscribesComments');
     const sharesCommentsContainer = document.getElementById('sharesComments');
+    const superFansCommentsContainer = document.getElementById('superFansComments');
     const commentTemplate = document.getElementById('commentTemplate');
     const searchInput = document.getElementById('searchInput');
     const totalCommentsElement = document.getElementById('totalComments');
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const followsCountElement = document.getElementById('followsCount');
     const subscribesCountElement = document.getElementById('subscribesCount');
     const sharesCountElement = document.getElementById('sharesCount');
+    const superFansCountElement = document.getElementById('superFansCount');
     const newCommentsAlert = document.getElementById('newCommentsAlert');
     const toggleThemeBtn = document.getElementById('toggleThemeBtn');
     const increaseFontBtn = document.getElementById('increaseFontBtn');
@@ -120,6 +122,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'subscribe':
                     eventBadge.textContent = 'SUB';
                     eventBadge.style.backgroundColor = '#8e7cc3';
+                    break;
+                case 'superFan':
+                    eventBadge.textContent = 'SF';
+                    eventBadge.style.backgroundColor = '#e74c3c';
                     break;
                 case 'follow':
                     eventBadge.textContent = 'FOLLOW';
@@ -281,17 +287,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const followCount = allComments.filter(c => c.eventType === 'follow').length;
         const subscribeCount = allComments.filter(c => c.eventType === 'subscribe').length;
         const shareCount = allComments.filter(c => c.eventType === 'share').length;
+        const superFanCount = allComments.filter(c => c.eventType === 'superFan').length;
         
         giftsCountElement.textContent = giftCount;
         followsCountElement.textContent = followCount;
         subscribesCountElement.textContent = subscribeCount;
         sharesCountElement.textContent = shareCount;
+        superFansCountElement.textContent = superFanCount;
         
         // Also render each category
         renderEventComments('gift', 'giftsComments');
         renderEventComments('follow', 'followsComments');
         renderEventComments('subscribe', 'subscribesComments');
         renderEventComments('share', 'sharesComments');
+        renderEventComments('superFan', 'superFansComments');
     }
 
     // Render event-specific tabs
@@ -545,6 +554,8 @@ document.addEventListener('DOMContentLoaded', function() {
             subscribesCommentsContainer.scrollTop = subscribesCommentsContainer.scrollHeight;
         } else if (document.querySelector('#shares-tab').classList.contains('active')) {
             sharesCommentsContainer.scrollTop = sharesCommentsContainer.scrollHeight;
+        } else if (document.querySelector('#superFans-tab').classList.contains('active')) {
+            superFansCommentsContainer.scrollTop = superFansCommentsContainer.scrollHeight;
         }
     }
 
@@ -566,6 +577,8 @@ document.addEventListener('DOMContentLoaded', function() {
             activeContainer = subscribesCommentsContainer;
         } else if (document.querySelector('#shares-tab').classList.contains('active')) {
             activeContainer = sharesCommentsContainer;
+        } else if (document.querySelector('#superFans-tab').classList.contains('active')) {
+            activeContainer = superFansCommentsContainer;
         } else {
             return; // No active container
         }
@@ -699,6 +712,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    superFansCommentsContainer.addEventListener('scroll', () => {
+        const isAtBottom = superFansCommentsContainer.scrollHeight - superFansCommentsContainer.clientHeight <= 
+                           superFansCommentsContainer.scrollTop + 50;
+        if (!isAtBottom) {
+            userScrolled = true;
+        } else {
+            userScrolled = false;
+        }
+    });
+
     // New comments alert click handler
     newCommentsAlert.addEventListener('click', () => {
         userScrolled = false;
@@ -766,6 +789,14 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             if (!userScrolled) {
                 sharesCommentsContainer.scrollTop = sharesCommentsContainer.scrollHeight;
+            }
+        }, 100);
+    });
+
+    document.getElementById('superFans-tab').addEventListener('click', () => {
+        setTimeout(() => {
+            if (!userScrolled) {
+                superFansCommentsContainer.scrollTop = superFansCommentsContainer.scrollHeight;
             }
         }, 100);
     });
@@ -857,7 +888,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 (newComment.eventType === 'gift' && document.querySelector('#gifts-tab').classList.contains('active')) ||
                 (newComment.eventType === 'follow' && document.querySelector('#follows-tab').classList.contains('active')) ||
                 (newComment.eventType === 'subscribe' && document.querySelector('#subscribes-tab').classList.contains('active')) ||
-                (newComment.eventType === 'share' && document.querySelector('#shares-tab').classList.contains('active'))
+                (newComment.eventType === 'share' && document.querySelector('#shares-tab').classList.contains('active')) ||
+                (newComment.eventType === 'superFan' && document.querySelector('#superFans-tab').classList.contains('active'))
             ) {
                 // Re-render the specific event tab if it's active
                 renderEventComments(newComment.eventType, `${newComment.eventType}sComments`);
