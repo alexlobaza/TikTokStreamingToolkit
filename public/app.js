@@ -177,8 +177,6 @@ class Announcement {
     }
 
     static addToQueue(announcement) {
-        console.log("Adding to queue");
-        console.log(announcement);
         this.#queue.push(announcement);
         this.#processQueue();
     }
@@ -283,25 +281,21 @@ connection.on('gift', (data) => {
 
 const followed = {}
 
-connection.on("social", (data) => {
+connection.on("follow", (data) => {
     if (!Config["enabled"]["follow"]) {
         return;
     }
 
-    if (!data["displayType"].includes("follow")) {
+    if (followed[data["user"]["uniqueId"]] && Config["firstFollowOnly"]) {
         return;
     }
 
-    if (followed[data["uniqueId"]] && Config["firstFollowOnly"]) {
-        return;
-    }
-
-    followed[data["uniqueId"]] = true;
+    followed[data["user"]["uniqueId"]] = true;
 
     let followSounds = Config["sounds"]["follow"];
     let followSoundObj = Array.isArray(followSounds) ? followSounds[Math.floor(Math.random() * followSounds.length)] : followSounds;
     let announcement = new Announcement(
-        data["nickname"] != "" ? data["nickname"] : data["uniqueId"],
+        data["user"]["nickname"] != "" ? data["user"]["nickname"] : data["user"]["uniqueId"],
         '/images/raccoon.GIF',
         `is now following!`,
         followSoundObj,

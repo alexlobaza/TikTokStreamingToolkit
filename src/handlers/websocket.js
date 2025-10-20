@@ -88,6 +88,22 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
             services.comments.update(shareComment);
         }
     });
+
+    // Follow event
+    tiktokConnectionWrapper.connection.on(WebcastEvent.FOLLOW, msg => {
+        socket.emit('follow', msg);
+        
+        // Add to comments with follow info
+        const followComment = {
+            ...msg,
+            comment: 'Followed the streamer',
+            isFollow: true,
+            eventType: 'follow',
+            msgId: msg.msgId || `follow_${Date.now()}`,
+            roomId: msg.roomId
+        };
+        services.comments.update(followComment);
+    });
     
     // Like event
     tiktokConnectionWrapper.connection.on(WebcastEvent.LIKE, msg => {
