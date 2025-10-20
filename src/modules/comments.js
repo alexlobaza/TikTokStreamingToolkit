@@ -188,6 +188,7 @@ class Comments {
     const userDetails = msg.user || null;
     const isModerator = msg.userIdentity?.isModeratorOfAnchor || null;
     const isSubscriber = msg.userIdentity?.isSubscriberOfAnchor || null;
+    const isSuperFan = msg.userIdentity?.isSuperFanOfAnchor || null;
     const isNewGifter = msg.userIdentity?.isNewGifterOfAnchor || null;
     const isNewSubscriber = msg.userIdentity?.isNewSubscriberOfAnchor || null;
     const msgId = msg.common?.msgId || null;
@@ -260,7 +261,10 @@ class Comments {
     } else if (msg.isSubscribe) {
       eventIcon = '⭐ ';
       additionalClasses = 'event-subscribe';
-    } else if (msg.isFollow) {
+    } else if (msg.isSuperFan) {
+      eventIcon = '👑 ';
+      additionalClasses = 'event-superFan';
+    }else if (msg.isFollow) {
       eventIcon = '👋 ';
       additionalClasses = 'event-follow';
     }
@@ -277,6 +281,7 @@ class Comments {
       isHighlighted: false,
       isModerator: !!isModerator,
       isSubscriber: !!isSubscriber,
+      isSuperFan: !!isSuperFan,
       isNewGifter: !!isNewGifter,
       isNewSubscriber: !!isNewSubscriber,
       userRole: followRole || 'none',
