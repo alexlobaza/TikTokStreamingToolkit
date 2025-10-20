@@ -131,6 +131,19 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
         services.comments.update(subscribeComment);
     });
 
+    tiktokConnectionWrapper.connection.on(WebcastEvent.SUPER_FAN, msg => {
+        socket.emit('superFan', msg);
+
+        const superFanComment = {
+            ...msg,
+            comment: 'Became a Super Fan',
+            isSuperFan: true,
+            eventType: 'superFan'
+        };
+
+        services.comments.update(superFanComment);
+    });
+
     // New follower event
     socket.on('newFollower', (data) => {
         if (!data.user) {
@@ -138,7 +151,7 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
             console.log(data);
             return;
         }
-        
+
         services.followers.updateFollowerCount(data.user.uniqueId);
         
         // Add to comments

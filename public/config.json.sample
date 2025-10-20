@@ -21,6 +21,7 @@
       "throw tomaroes": { "file": "/sounds/enchanted.wav" }
     },
     "subscribe": { "file": "/sounds/enchanted.wav" },
+    "superFan": { "file": "/sounds/enchanted.wav" },
     "follow": [
       { "file": "/sounds/enchanted.wav" },
       { "file": "/sounds/follow_sound.wav", "volume": 0.05 }
@@ -30,7 +31,8 @@
   "enabled": {
     "gift": true,
     "subscribe": true,
-    "follow": true
+    "follow": true,
+    "superFan": true
   },
 
   "firstFollowOnly": true,

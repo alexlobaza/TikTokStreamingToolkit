@@ -295,7 +295,7 @@ connection.on("follow", (data) => {
     let followSounds = Config["sounds"]["follow"];
     let followSoundObj = Array.isArray(followSounds) ? followSounds[Math.floor(Math.random() * followSounds.length)] : followSounds;
     let announcement = new Announcement(
-        data["user"]["nickname"] != "" ? data["user"]["nickname"] : data["user"]["uniqueId"],
+        data["user"]?.["nickname"] != "" ? data["user"]?.["nickname"] : data["user"]?.["uniqueId"],
         '/images/raccoon.GIF',
         `is now following!`,
         followSoundObj,
@@ -318,8 +318,8 @@ connection.on("subscribe", (data) => {
 
     let subscribeSound = Config["sounds"]["subscribe"];
     let announcement = new Announcement(
-        data["nickname"] != "" ? data["nickname"] : data["uniqueId"],
-        data["profilePictureUrl"],
+        data["user"]?.["nickname"] != "" ? data["user"]?.["nickname"] : data["user"]?.["uniqueId"],
+        data["user"]?.["profilePicture"]?.["url"]?.[0] || null,
         `just subscribed!`,
         subscribeSound || null,
         true,
@@ -328,4 +328,21 @@ connection.on("subscribe", (data) => {
 
     Announcement.addToQueue(announcement);
 
+})
+
+connection.on("superFan", (data) => {
+    if (!Config["enabled"]["superFan"]) {
+        return;
+    }
+
+    let superFanSound = Config["sounds"]["superFan"];
+    let announcement = new Announcement(
+        data["nickname"] != "" ? data["nickname"] : data["uniqueId"],
+        data["user"]?.["profilePicture"]?.["url"]?.[0] || null,
+        `became a Super Fan!`,
+        superFanSound || null,
+        true,
+        'superFan'
+    )
+    Announcement.addToQueue(announcement);
 })

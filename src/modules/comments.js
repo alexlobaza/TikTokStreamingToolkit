@@ -174,7 +174,7 @@ class Comments {
     let data;
     
     // Check if this is a special event (gift, follow, share, or subscribe)
-    const isSpecialEvent = msg.isGift || msg.isShare || msg.isSubscribe || msg.isFollow;
+    const isSpecialEvent = msg.isGift || msg.isShare || msg.isSubscribe || msg.isFollow || msg.isSuperFan;
     const eventType = msg.eventType || 'chat';
 
     const uniqueId = msg.user?.uniqueId || null;
