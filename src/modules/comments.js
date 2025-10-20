@@ -177,20 +177,20 @@ class Comments {
     const isSpecialEvent = msg.isGift || msg.isShare || msg.isSubscribe || msg.isFollow;
     const eventType = msg.eventType || 'chat';
 
-    const uniqueId = msg.user.uniqueId;
-    const nickname = msg.user.nickname;
-    const profilePictureUrl = msg.user.profilePicture['url'][0];
-    const comment = msg.comment;
-    const createTime = msg.common.createTime;
-    const followRole = msg.userRole;
-    const teamMemberLevel = msg.user.userHonor.level;
-    const followInfo = msg.user.followInfo;
-    const userDetails = msg.user;
-    const isModerator = msg.userIdentity.isModeratorOfAnchor;
-    const isSubscriber = msg.userIdentity.isSubscriberOfAnchor;
-    const isNewGifter = msg.userIdentity.isNewGifterOfAnchor;
-    const isNewSubscriber = msg.userIdentity.isNewSubscriberOfAnchor;
-    const msgId = msg.common.msgId;
+    const uniqueId = msg.user?.uniqueId || null;
+    const nickname = msg.user?.nickname || null;
+    const profilePictureUrl = msg.user?.profilePicture?.['url']?.[0] || null;
+    const comment = msg.comment || null;
+    const createTime = msg.common?.createTime || null;
+    const followRole = msg.userRole || null;
+    const teamMemberLevel = msg.user?.userHonor?.level || null;
+    const followInfo = msg.user?.followInfo || null;
+    const userDetails = msg.user || null;
+    const isModerator = msg.userIdentity?.isModeratorOfAnchor || null;
+    const isSubscriber = msg.userIdentity?.isSubscriberOfAnchor || null;
+    const isNewGifter = msg.userIdentity?.isNewGifterOfAnchor || null;
+    const isNewSubscriber = msg.userIdentity?.isNewSubscriberOfAnchor || null;
+    const msgId = msg.common?.msgId || null;
     
     // Correctly parse timestamps as numbers
     const timestamp = typeof createTime === 'string' ? parseInt(createTime, 10) : createTime;

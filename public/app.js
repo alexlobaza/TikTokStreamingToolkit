@@ -306,7 +306,7 @@ connection.on("follow", (data) => {
     Announcement.addToQueue(announcement);
 
     // Emit a custom event for new follower
-    connection.socket.emit('newFollower', { data });
+    connection.socket.emit('newFollower', data );
 
 })
 

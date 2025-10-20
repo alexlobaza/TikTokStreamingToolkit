@@ -133,6 +133,12 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
 
     // New follower event
     socket.on('newFollower', (data) => {
+        if (!data.user) {
+            console.log("No user data found for follow");
+            console.log(data);
+            return;
+        }
+        
         services.followers.updateFollowerCount(data.user.uniqueId);
         
         // Add to comments
