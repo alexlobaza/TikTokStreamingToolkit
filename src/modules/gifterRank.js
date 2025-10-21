@@ -30,7 +30,7 @@ class GifterRank {
     
     const uniqueId = msg.user.uniqueId;
     const nickname = msg.user.nickname;
-    const profilePictureUrl = msg.user.profilePictureUrl;
+    const profilePictureUrl = msg.user.profilePicture?.["url"]?.[0] || null;
     const diamondCount = msg.giftDetails.diamondCount;
     const msgId = msg.common.msgId;
     const repeatCount = msg.repeatCount;

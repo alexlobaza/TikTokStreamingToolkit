@@ -69,9 +69,44 @@ function updateDOM(topGifters) {
     row.className = 'gifter-row';
     row.style.position = 'relative'; // Use relative positioning
 
-    // Trim nickname if longer than 15 characters
-    const trimmedNickname = gifter.nickname.length > 15
-      ? gifter.nickname.substring(0, 13) + '...'
+    // Function to count characters including emojis as 3 characters each
+    function getCharacterCount(str) {
+      let count = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        // Check if character is an emoji (basic emoji detection)
+        if (char.codePointAt(0) > 127) {
+          count += 3; // Emojis count as 3 characters
+        } else {
+          count += 1; // Regular characters count as 1
+        }
+      }
+      return count;
+    }
+
+    // Function to trim nickname to fit within character limit
+    function trimNickname(nickname, maxChars) {
+      let result = '';
+      let charCount = 0;
+      
+      for (let i = 0; i < nickname.length; i++) {
+        const char = nickname[i];
+        const charWeight = char.codePointAt(0) > 127 ? 3 : 1;
+        
+        if (charCount + charWeight <= maxChars) {
+          result += char;
+          charCount += charWeight;
+        } else {
+          break;
+        }
+      }
+      
+      return result;
+    }
+
+    // Trim nickname if longer than 11 characters (counting emojis as 3)
+    const trimmedNickname = getCharacterCount(gifter.nickname) > 13
+      ? trimNickname(gifter.nickname, 11)
       : gifter.nickname;
 
     row.innerHTML = `
