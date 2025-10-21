@@ -109,9 +109,17 @@ function updateDOM(topGifters) {
       ? trimNickname(gifter.nickname, 11)
       : gifter.nickname;
 
+    // Handle profile picture with fallback
+    const profilePicHtml = gifter.profilePictureUrl 
+      ? `<img src="${gifter.profilePictureUrl}" alt="${gifter.nickname}" class="profile-pic" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
+      : '';
+    
+    const fallbackPic = `<div class="profile-pic" style="display: ${gifter.profilePictureUrl ? 'none' : 'flex'}; width: 50px; height: 50px; background: #333; color: #fff; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">${gifter.nickname.charAt(0).toUpperCase()}</div>`;
+
     row.innerHTML = `
       <div class="rank">${index + 1}</div>
-      <img src="${gifter.profilePictureUrl}" alt="${gifter.nickname}" class="profile-pic" />
+      ${profilePicHtml}
+      ${fallbackPic}
       <div class="details">
         <div class="nickname">${trimmedNickname}</div>
         <div class="diamonds">
