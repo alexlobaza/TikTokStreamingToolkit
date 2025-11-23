@@ -250,9 +250,9 @@ class Comments {
       eventIcon = '🎁 ';
       additionalClasses = 'event-gift';
       giftData = {
-        totalDiamonds: Number(msg["diamondCount"]) * Number(msg["repeatCount"]),
+        totalDiamonds: Number(msg["giftDetails"]["diamondCount"]) * Number(msg["repeatCount"]),
         name: msg["giftName"],
-        price: Number(msg["diamondCount"]),
+        price: Number(msg["giftDetails"]["diamondCount"]),
         count: Number(msg["repeatCount"])
       }
     } else if (msg.isShare) {
