@@ -57,8 +57,8 @@ class LikeRank {
     if (!liker.likeEvents[msgId]) {
       liker.likeEvents[msgId] = {
         likes: Math.round(likeCount * multiplier),
-        timestamp: msg.createTime,
-        giftName: msg.giftName,
+        timestamp: msg.common?.createTime,
+        giftName: msg.giftDetails?.giftName,
       };
 
       liker.totalLikes += Math.round(likeCount * multiplier);
