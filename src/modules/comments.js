@@ -251,7 +251,7 @@ class Comments {
       additionalClasses = 'event-gift';
       giftData = {
         totalDiamonds: Number(msg["giftDetails"]["diamondCount"]) * Number(msg["repeatCount"]),
-        name: msg["giftName"],
+        name: msg["giftDetails"]["giftName"],
         price: Number(msg["giftDetails"]["diamondCount"]),
         count: Number(msg["repeatCount"])
       }
