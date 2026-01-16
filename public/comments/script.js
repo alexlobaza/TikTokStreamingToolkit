@@ -196,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check for and remove duplicates before assigning
             allComments = removeDuplicateComments(data.comments);
             totalCommentsElement.textContent = allComments.length;
-            console.log(totalCommentsElement.textContent)
             
             // Count unique commenters
             const uniqueIds = new Set();
@@ -905,7 +904,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // The server will also send this as a chat message with eventType='gift'
     });
     
-    socket.on('social', (msg) => {
+    socket.on('share', (msg) => {
         // The server will also send this as a chat message with eventType='share'
     });
     

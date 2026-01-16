@@ -75,18 +75,20 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
 
     // Social event
     tiktokConnectionWrapper.connection.on(WebcastEvent.SHARE, msg => {
-        socket.emit('social', msg);
+        socket.emit('share', msg);
         
-        // Only add shares (type = 3)
-        if (msg.displayType === 3 || msg.label?.includes('shared')) {
-            const shareComment = {
-                ...msg,
-                comment: 'Shared the stream',
-                isShare: true,
-                eventType: 'share'
-            };
-            services.comments.update(shareComment);
-        }
+        // Process all share events (removed restrictive filter)
+        // TikTok may send shares with different displayType values
+        const shareComment = {
+            ...msg,
+            comment: 'Shared the stream',
+            isShare: true,
+            eventType: 'share',
+            msgId: msg.common?.msgId || msg.msgId || `share_${Date.now()}`,
+            createTime: msg.common?.createTime || msg.createTime || Date.now().toString(),
+            roomId: msg.roomId
+        };
+        services.comments.update(shareComment);
     });
 
     // Follow event
@@ -147,7 +149,6 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     // New follower event
     socket.on('newFollower', (data) => {
         if (!data.user) {
-            console.log("No user data found for follow");
             return;
         }
 
@@ -261,6 +262,17 @@ function setupSocketHandlers(io, config) {
                     brightnessIncrease: 100,
                     transitionTime: 10
                 }).catch(error => console.error('Error pulsing lights for gift:', error));
+            }
+        });
+        socket.on('shareLights', () => {
+            if (config.hue.enabled) {
+                services.hue.pulseGroupLights(config.hue.targetGroupId, {
+                    duration: 100,
+                    count: 2,
+                    color: [0.5, 0.5], // Neutral color
+                    brightnessIncrease: 50,
+                    transitionTime: 10
+                }).catch(error => console.error('Error pulsing lights for share:', error));
             }
         });
     });

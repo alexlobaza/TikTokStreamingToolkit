@@ -346,3 +346,26 @@ connection.on("superFan", (data) => {
     )
     Announcement.addToQueue(announcement);
 })
+
+connection.on("share", (data) => {
+    // Check if share announcements are enabled (default to true if not specified)
+    if (Config["enabled"]["share"] === false) {
+        return;
+    }
+
+    // Skip if no user data
+    if (!data["user"]) {
+        return;
+    }
+
+    let shareSound = Config["sounds"]?.["share"] || null;
+    let announcement = new Announcement(
+        data["user"]?.["nickname"] != "" ? data["user"]?.["nickname"] : data["user"]?.["uniqueId"],
+        data["user"]?.["profilePicture"]?.["url"]?.[0] || null,
+        `shared the stream!`,
+        shareSound || null,
+        true,
+        'share'
+    )
+    Announcement.addToQueue(announcement);
+})
