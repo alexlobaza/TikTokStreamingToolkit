@@ -237,7 +237,7 @@ function setupSocketHandlers(io, config) {
                     duration: 150,
                     count: 10,
                     color: [0.67, 0.33],
-                    brightnessIncrease: 200,
+                    brightnessIncrease: 400,
                     transitionTime: 10
                 }).catch(error => console.error('Error pulsing lights for subscribe:', error));
             }
@@ -248,7 +248,7 @@ function setupSocketHandlers(io, config) {
                     duration: 100,
                     count: 4,
                     color: [0.45, 0.41], // Warm white
-                    brightnessIncrease: 100,
+                    brightnessIncrease: 300,
                     transitionTime: 10
                 }).catch(error => console.error('Error pulsing lights for new follower:', error));
             }
@@ -259,7 +259,7 @@ function setupSocketHandlers(io, config) {
                     duration: 100,
                     count: 3,
                     color: [0.55, 0.45],
-                    brightnessIncrease: 100,
+                    brightnessIncrease: 300,
                     transitionTime: 10
                 }).catch(error => console.error('Error pulsing lights for gift:', error));
             }
@@ -270,7 +270,7 @@ function setupSocketHandlers(io, config) {
                     duration: 100,
                     count: 2,
                     color: [0.5, 0.5], // Neutral color
-                    brightnessIncrease: 50,
+                    brightnessIncrease: 300,
                     transitionTime: 10
                 }).catch(error => console.error('Error pulsing lights for share:', error));
             }
