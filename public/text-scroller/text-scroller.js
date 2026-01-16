@@ -164,15 +164,15 @@ async function fetchMessages() {
     // Check if response contains messages array
     if (data && data.record && Array.isArray(data.record.messages)) {
       messages = data.record.messages;
-      console.log("Successfully fetched messages:", messages);
+      console.log("Successfully fetched messages");
     } else if (data && Array.isArray(data.messages)) {
       messages = data.messages;
-      console.log("Successfully fetched messages:", messages);
+      console.log("Successfully fetched messages");
     } else if (Array.isArray(data)) {
       messages = data;
-      console.log("Successfully fetched messages array:", messages);
+      console.log("Successfully fetched messages array");
     } else {
-      console.error("Invalid JSON format - expected messages array:", data);
+      console.error("Invalid JSON format - expected messages array");
     }
     
     // If we're currently displaying the last message of the old list,

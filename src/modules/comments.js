@@ -135,7 +135,7 @@ class Comments {
         if (response.data && response.data.success) {
           console.log(`Comments successfully synced offsite at ${new Date().toLocaleString()}`);
         } else {
-          console.error('Offsite sync error:', response.data);
+          console.error('Offsite sync error');
         }
       })
       .catch(error => {

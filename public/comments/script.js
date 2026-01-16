@@ -903,17 +903,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // For other event types (gift, share, subscribe, follow)
     socket.on('gift', (msg) => {
         // The server will also send this as a chat message with eventType='gift'
-        console.log('Gift received:', msg);
     });
     
     socket.on('social', (msg) => {
         // The server will also send this as a chat message with eventType='share'
-        console.log('Social event received:', msg);
     });
     
     socket.on('subscribe', (msg) => {
         // The server will also send this as a chat message with eventType='subscribe'
-        console.log('Subscribe received:', msg);
     });
     
     // Initial load

@@ -63,7 +63,6 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
         // Add to comments with gift info
         const { repeatEnd, giftType } = msg;
         if (repeatEnd == true || giftType != 1) {
-            console.log('Gift event:', msg);
             const giftComment = {
                 ...msg,
                 comment: `Sent gift: ${msg.giftDetails.giftName} x${msg.repeatCount}`,
@@ -149,7 +148,6 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
     socket.on('newFollower', (data) => {
         if (!data.user) {
             console.log("No user data found for follow");
-            console.log(data);
             return;
         }
 
