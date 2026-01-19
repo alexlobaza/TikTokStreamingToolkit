@@ -7,11 +7,13 @@ const commentsRoutes = require('./routes/comments');
 const followersRoutes = require('./routes/followers');
 const giftersRoutes = require('./routes/gifters');
 const likersRoutes = require('./routes/likers');
+const hueRoutes = require('./routes/hue');
 
 // Use route modules
 router.use('/comments', commentsRoutes);
 router.use('/', followersRoutes); // Contains /follower-count
 router.use('/', giftersRoutes);   // Contains /gifter-rank
 router.use('/', likersRoutes);    // Contains /like-rank
+router.use('/', hueRoutes);       // Contains /hue/refetch-initial-state
 
 module.exports = router;

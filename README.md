@@ -52,6 +52,25 @@ Feel free to make pull requests with missing/new features, fixes, etc.
 1. Enter `node server.js` to start the application server
 2. You should see: `Server running! Please visit http://localhost:8081`
 
+#### Continuing an Existing Stream
+If you need to restart the server during a live stream without losing your data (likes, comments, gifts, followers, etc.), use the `--continue` flag:
+
+```bash
+node server.js --continue
+```
+
+or
+
+```bash
+node server.js -continue
+```
+
+This will:
+- Preserve all existing data files (likes, comments, gifts, followers, etc.)
+- Maintain timestamps and rankings
+- Keep your stream statistics intact
+- **Note**: This will NOT reset your data files, so use it when restarting during an active stream
+
 ### OBS Setup
 1. In OBS, add a new Browser Source
 2. Set the URL to `http://localhost:8082/`
@@ -91,6 +110,34 @@ Sounds will not work unless you click/interact with the page first after loading
 - Special effects for subscribers
 - Customizable light patterns
 - Group control for multiple lights
+- Initial state tracking for smooth light transitions
+
+### HUE API Endpoints
+
+#### Refetch Initial Lights State
+During a stream, if you manually change your lights and want to update what the system considers the "initial" state (the baseline that lights revert to after effects), you can use this endpoint:
+
+**Endpoint:** `POST /api/hue/refetch-initial-state`
+
+**Usage:**
+```bash
+curl -X POST http://localhost:8082/api/hue/refetch-initial-state
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Initial lights state refetched successfully",
+  "groupId": "1"
+}
+```
+
+This endpoint:
+- Fetches the current state of all lights in your configured group
+- Updates the baseline state used when reverting lights after effects
+- Allows you to update the "initial" state without restarting the server
+- Useful if you manually adjust lights during a stream and want to preserve those settings as the new baseline
 
 ## Configuration Guide
 
