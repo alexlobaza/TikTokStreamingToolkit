@@ -12,7 +12,8 @@ class Comments {
     this.viewersPath = path.join(__dirname, '../../public', 'viewers', 'viewers.json');
     this.updateQueue = [];
     this.ensureDirectoryExists();
-    this.initTimestamp = Date.now(); // Store initialization timestamp
+    // Initialize timestamp will be set in initialize() method
+    this.initTimestamp = null;
   }
 
   // Check if offsite sync is enabled in config
@@ -327,18 +328,41 @@ class Comments {
   }
 
   // Initialize or reset comments file
-  initialize() {
-    const initialData = { 
-      totalComments: 0, 
-      commenters: {},
-      commentsById: {}, // Use an object instead of an array
-      commentsOrder: [], // Array of ids to maintain order
-      initTimestamp: this.initTimestamp // Add initialization timestamp
-    };
-
+  initialize(shouldContinue = false) {
     try {
-      // Ensure directory exists before writing
       this.ensureDirectoryExists();
+      
+      if (shouldContinue) {
+        // Try to load existing data and preserve timestamp
+        if (fs.existsSync(this.commentsPath)) {
+          const existingData = ContentSanitizer.safeReadJSON(this.commentsPath, null);
+          if (existingData) {
+            // Preserve existing timestamp if it exists, otherwise use current time
+            this.initTimestamp = existingData.initTimestamp || Date.now();
+            // If timestamp was missing, update the file with it
+            if (!existingData.initTimestamp) {
+              existingData.initTimestamp = this.initTimestamp;
+              fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(existingData, 2));
+            }
+            console.log('Comments file: Continuing with existing data and timestamp.');
+            return; // Don't reset, just preserve existing data
+          }
+        }
+      }
+      
+      // Set new timestamp if continuing but no existing data, or if starting fresh
+      if (!this.initTimestamp) {
+        this.initTimestamp = Date.now();
+      }
+      
+      const initialData = { 
+        totalComments: 0, 
+        commenters: {},
+        commentsById: {}, // Use an object instead of an array
+        commentsOrder: [], // Array of ids to maintain order
+        initTimestamp: this.initTimestamp // Add initialization timestamp
+      };
+
       fs.writeFileSync(this.commentsPath, ContentSanitizer.safeStringify(initialData, 2));
       console.log('Comments file has been initialized.');
     } catch (error) {

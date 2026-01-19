@@ -7,6 +7,10 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
+// Parse command-line arguments
+const args = process.argv.slice(2);
+const shouldContinue = args.includes('--continue') || args.includes('-continue');
+
 const hueModule = require('./src/modules/hueModule');
 const GifterRank = require('./src/modules/gifterRank');
 const LikeRank = require('./src/modules/likeRank');
@@ -51,11 +55,18 @@ setupSocketHandlers(io, config);
 // Load API routes
 app.use('/api', apiRoutes);
 
-viewers.initialize();
-gifterRank.initialize();
-likeRank.initialize();
-comments.initialize();
-followers.initialize();
+// Initialize modules (with continue flag to preserve data if restarting during live stream)
+viewers.initialize(shouldContinue);
+gifterRank.initialize(shouldContinue);
+likeRank.initialize(shouldContinue);
+comments.initialize(shouldContinue);
+followers.initialize(shouldContinue);
+
+if (shouldContinue) {
+    console.log('Continuing existing stream - data and timestamps preserved.');
+} else {
+    console.log('Starting new stream - all data files reset.');
+}
 
 if(config.hue.enabled) {
   hueModule.fetchInitialGroupState(config.hue.targetGroupId);

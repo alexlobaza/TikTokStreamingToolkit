@@ -66,7 +66,15 @@ class Viewers {
           fs.writeFileSync(this.viewersPath, ContentSanitizer.safeStringify(fileData, 2));
   }
 
-  initialize() {
+  initialize(shouldContinue = false) {
+    if (shouldContinue) {
+      // Check if file exists, if so, preserve it
+      if (fs.existsSync(this.viewersPath)) {
+        console.log('Viewers file: Continuing with existing data.');
+        return; // Don't reset, preserve existing data
+      }
+    }
+
     const initialData = { 
       entries: {},
       totalUpdates: 0

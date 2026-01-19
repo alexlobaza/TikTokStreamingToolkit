@@ -98,7 +98,15 @@ class GifterRank {
     }
   }
   
-  initialize() {
+  initialize(shouldContinue = false) {
+    if (shouldContinue) {
+      // Check if file exists, if so, preserve it
+      if (fs.existsSync(this.gifterRankPath)) {
+        console.log('Gifter rank file: Continuing with existing data.');
+        return; // Don't reset, preserve existing data
+      }
+    }
+
     const initialData = { totalDiamonds: 0, gifters: {} };
 
     try {
