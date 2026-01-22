@@ -43,6 +43,17 @@ const comments = new Comments(config);
 const viewers = new Viewers(config);
 const followers = new Followers(config);
 
+// Pass initialized module instances to websocket handler to avoid duplicated state
+const services = {
+    tiktok: require('./src/services/tiktok'),
+    followers,
+    comments,
+    viewers,
+    gifterRank,
+    likeRank,
+    hue: hueModule,
+};
+
 // Serve frontend files
 app.use(express.static('public'));
 app.use((req, res, next) => {
@@ -50,7 +61,7 @@ app.use((req, res, next) => {
     next();
 });
 
-setupSocketHandlers(io, config);
+setupSocketHandlers(io, config, services);
 
 // Load API routes
 app.use('/api', apiRoutes);

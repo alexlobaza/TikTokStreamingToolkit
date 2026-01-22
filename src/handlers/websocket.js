@@ -1,11 +1,10 @@
 // websocket/handlers.js - Socket.io event handlers
 const { getGlobalConnectionCount } = require('../services/tiktok');
 const { WebcastEvent } = require('tiktok-live-connector');
-const services = require('../services');
 const apiClient = require('../utils/apiClient');
 
 // TikTok connection wrapper setup
-function setupEventListeners(socket, tiktokConnectionWrapper, config) {
+function setupEventListeners(socket, tiktokConnectionWrapper, config, services) {
     // Connected event
     tiktokConnectionWrapper.once('connected', state => {
         socket.emit('tiktokConnected', state);
@@ -178,7 +177,7 @@ function setupEventListeners(socket, tiktokConnectionWrapper, config) {
 }
 
 // Setup socket connection handlers
-function setupSocketHandlers(io, config) {
+function setupSocketHandlers(io, config, services) {
     io.on('connection', (socket) => {
 
         let tiktokConnectionWrapper;
@@ -190,7 +189,7 @@ function setupSocketHandlers(io, config) {
                 tiktokConnectionWrapper.connect();
                 
                 // If connection is successful, set up event listeners
-                setupEventListeners(socket, tiktokConnectionWrapper, config);
+                setupEventListeners(socket, tiktokConnectionWrapper, config, services);
             } catch (err) {
                 console.error(`Connection attempt ${retryCount + 1} failed:`, err.toString());
                 socket.emit('connectionAttempt', { 
