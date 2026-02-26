@@ -83,7 +83,7 @@ let Config = {
 
     connectWithRetry() {
         Logger.INFO("Connecting to %s... (Attempt %d)", Config["uniqueId"], this.retryCount + 1);
-        connection.connect(Config["uniqueId"], {enableExtendedGiftInfo: true})
+        connection.connect(Config["uniqueId"], {enableExtendedGiftInfo: false})
             .then(state => {
                 Logger.INFO("Connected to roomId %s", state["roomId"]);
                 this.firstConnect = false;
