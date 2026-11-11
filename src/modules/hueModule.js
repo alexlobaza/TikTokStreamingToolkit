@@ -87,7 +87,9 @@ async function delay(ms) {
 
 // colors: optional list of xy colors, cycled one per pulse (takes precedence over `color`)
 // gap: ms between pulses; defaults to `duration`, which was the only behavior before
-async function pulseGroupLights(groupId, { duration = 5000, count = 1, color = null, colors = null, gap = duration, brightnessIncrease = 100, transitionTime = 10 }) {
+// turnOnIfOff: switch on lights whose normal state is off for each pulse (the revert switches
+//   them off again). Without it, pulses on an off light are ignored by the bridge.
+async function pulseGroupLights(groupId, { duration = 5000, count = 1, color = null, colors = null, gap = duration, brightnessIncrease = 100, transitionTime = 10, turnOnIfOff = false }) {
     try {
       const groupLights = await getGroupLights(groupId);
       const palette = Array.isArray(colors) && colors.length > 0 ? colors : (color ? [color] : []);
@@ -103,6 +105,9 @@ async function pulseGroupLights(groupId, { duration = 5000, count = 1, color = n
           const pulseColor = palette.length > 0 ? palette[i % palette.length] : null;
           if (pulseColor) {
             state.xy = pulseColor;
+          }
+          if (turnOnIfOff && initialGroupState[lightId].on === false) {
+            state.on = true;
           }
           await setLightState(lightId, state);
         }

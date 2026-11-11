@@ -170,6 +170,9 @@ effects are defined in `config/hue-effects.defaults.json`. To change one, add `h
 | `brightnessIncrease` | Brightness added on top of the lights' normal level (254 = full) |
 | `transitionTime` | Fade time for each change, in units of 100 ms (`10` = 1 second) |
 
+Lights that are off switch on for an effect and go dark again afterwards, so you can stay in the dark and
+only light up on alerts. To leave lights that are off alone, set `"lightUpWhenOff": false` under `hue`.
+
 Changes to `config.json` are picked up while the server is running, so there's no need to restart
 mid-stream. Invalid values fall back to the defaults, with a warning in the console.
 

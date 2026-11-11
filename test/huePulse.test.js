@@ -245,3 +245,34 @@ test('an idle preview restores the lights by itself', async () => {
         console.log = originalLog;
     }
 });
+
+test('lights that are off light up for effects and go dark again (hue.lightUpWhenOff)', async () => {
+    const original = { ...INITIAL['2'] };
+    INITIAL['2'] = { on: false, bri: 40, xy: [0.4, 0.4] };
+    try {
+        await hue.fetchInitialGroupState('1');
+        writeConfig({ gift: { count: 1, duration: 10, colors: [[0.6, 0.3]] } });
+        configStore.reload();
+
+        await hueEffects.playEffect('gift');
+        assert.deepEqual(stripTimes(requests), [
+            // light 1 is on: same request as always (no `on` field)
+            { light: '1', state: { bri: 254, transitiontime: 10, xy: [0.6, 0.3] } },
+            { light: '2', state: { bri: 254, transitiontime: 10, xy: [0.6, 0.3], on: true } },
+            { light: '1', state: { on: true, bri: 100, xy: [0.3, 0.3], transitiontime: 10 } },
+            { light: '2', state: { on: false, bri: 40, xy: [0.4, 0.4], transitiontime: 10 } },
+        ]);
+
+        // Opt out: the old behavior (the bridge ignores the pulse on the off light)
+        requests = [];
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        config.hue.lightUpWhenOff = false;
+        fs.writeFileSync(configPath, JSON.stringify(config));
+        configStore.reload();
+        await hueEffects.playEffect('gift');
+        assert.ok(requests.every(r => !(r.light === '2' && r.state.on === true)));
+    } finally {
+        INITIAL['2'] = original;
+        await hue.fetchInitialGroupState('1');
+    }
+});

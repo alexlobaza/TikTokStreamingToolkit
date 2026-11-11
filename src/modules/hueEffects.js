@@ -26,6 +26,10 @@
 //
 // Missing or invalid fields fall back to the defaults, so existing configs without
 // `hue.effects` behave exactly as before.
+//
+// `hue.lightUpWhenOff` (default true): lights that are off switch on for an effect and off
+// again afterwards, so a streamer can stay in the dark and only light up on alerts. Set it to
+// false to leave lights that are off alone (before this option, effects on off lights did nothing).
 const DEFAULTS = require('../../config/hue-effects.defaults.json');
 const { getConfigStore } = require('./configStore');
 
@@ -240,7 +244,11 @@ async function playEffect(eventKey, options = {}) {
 
     const preview = options.preview || require('./huePreview').getPreviewController();
     // A pulse ends by reverting to the baseline; put an active light preview back afterwards
-    const pulse = hue.pulseGroupLights(groupId, toPulseOptions(effect))
+    const pulse = hue.pulseGroupLights(groupId, {
+        ...toPulseOptions(effect),
+        // Lights that are off flash on for effects unless hue.lightUpWhenOff is false
+        turnOnIfOff: hueConfig.lightUpWhenOff !== false,
+    })
         .finally(() => preview.reapplyIfActive());
     if (options.wait === false) {
         pulse.catch(error => console.error(`Error pulsing lights for ${eventKey}:`, error.message));

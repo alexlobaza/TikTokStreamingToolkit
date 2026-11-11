@@ -8,13 +8,18 @@ class TikTokIOConnection {
         this.uniqueId = null;
         this.options = null;
 
+        this.hasConnected = false;
+
         this.socket.on('connect', () => {
             Logger.DEBUG("Socket connected!");
 
-            // Reconnect to streamer if uniqueId already set
-            if (this.uniqueId) {
+            // After a reconnect (e.g. server restart), tell the new server session which streamer
+            // to follow. Not on the first connect: setUniqueId() calls made before then are
+            // buffered by socket.io and sent on connect, so re-sending here connected twice.
+            if (this.hasConnected && this.uniqueId) {
                 this.setUniqueId();
             }
+            this.hasConnected = true;
         })
 
         this.socket.on('disconnect', () => {
