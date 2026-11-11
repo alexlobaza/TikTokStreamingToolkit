@@ -276,3 +276,21 @@ test('lights that are off light up for effects and go dark again (hue.lightUpWhe
         await hue.fetchInitialGroupState('1');
     }
 });
+
+test('changing the alert group captures that group\'s baseline before the first effect', async () => {
+    await hue.fetchInitialGroupState('1');
+    assert.equal(hue.hasInitialGroupState('1'), true);
+    assert.equal(hue.hasInitialGroupState('2'), false);
+
+    const fetched = [];
+    const fakeHue = {
+        hasInitialGroupState: groupId => hue.hasInitialGroupState(groupId),
+        fetchInitialGroupState: async groupId => { fetched.push(groupId); },
+        pulseGroupLights: async () => {},
+    };
+    const config = { hue: { enabled: true, targetGroupId: '2' } };
+    const preview = { reapplyIfActive() {} };
+    const lightboard = { isPausingAlerts: () => false, reapplyIfActive() {} };
+    await hueEffects.playEffect('gift', { config, hue: fakeHue, preview, lightboard });
+    assert.deepEqual(fetched, ['2']);
+});

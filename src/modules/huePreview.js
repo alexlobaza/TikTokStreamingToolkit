@@ -67,7 +67,7 @@ function createPreviewController(hue, { idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS 
         }
         if (!active) {
             // The baseline must be captured before the lights are changed
-            if (!hue.hasInitialGroupState()) {
+            if (!hue.hasInitialGroupState(targetGroupId)) {
                 await hue.fetchInitialGroupState(targetGroupId);
             }
             lights = await hue.getGroupLights(targetGroupId);

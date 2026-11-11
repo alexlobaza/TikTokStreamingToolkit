@@ -10,6 +10,8 @@ const username = hueConfig.username;
 const clientKey = hueConfig.clientkey;
 
 let initialGroupState = {};
+// Group the baseline was last captured for (the alert group can change while running)
+let initialStateGroupId = null;
 
 const axiosInstance = axios.create({
   baseURL: `http://${bridgeIP}/api/${username}`,
@@ -24,13 +26,18 @@ async function fetchInitialGroupState(groupId) {
       for (const lightId of groupLights) {
         initialGroupState[lightId] = await getLightState(lightId);
       }
+      initialStateGroupId = String(groupId);
       console.log('Initial group state fetched');
     } catch (error) {
       console.error('Error fetching initial group state:', error.message);
     }
   }
 
-function hasInitialGroupState() {
+// With a groupId: whether the baseline was captured for that group
+function hasInitialGroupState(groupId) {
+  if (groupId !== undefined && groupId !== null) {
+    return initialStateGroupId === String(groupId);
+  }
   return Object.keys(initialGroupState).length > 0;
 }
 

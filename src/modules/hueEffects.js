@@ -243,8 +243,8 @@ async function playEffect(eventKey, options = {}) {
     }
 
     const hue = options.hue || require('./hueModule');
-    // Hue may have been switched on after startup, before the baseline state was captured
-    if (!hue.hasInitialGroupState()) {
+    // Capture the baseline if Hue was switched on after startup or the alert group changed
+    if (!hue.hasInitialGroupState(groupId)) {
         await hue.fetchInitialGroupState(groupId);
     }
 
