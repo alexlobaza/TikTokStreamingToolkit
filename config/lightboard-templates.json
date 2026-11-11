@@ -5,39 +5,157 @@
       "title": "Police",
       "tileColor": "#2244FF",
       "mode": "toggle",
-      "effect": { "type": "police", "style": "swap", "split": "rooms", "colors": ["#FF0000", "#0022FF"], "interval": 500 }
+      "effect": {
+        "type": "police",
+        "style": "swap",
+        "split": "rooms",
+        "colors": [
+          "#FF0000",
+          "#0022FF"
+        ],
+        "interval": 500
+      }
     },
     {
       "title": "Police (flash)",
       "tileColor": "#C8102E",
       "mode": "toggle",
-      "effect": { "type": "police", "style": "flash", "split": "rooms", "colors": ["#FF0000", "#0022FF"] }
+      "effect": {
+        "type": "police",
+        "style": "flash",
+        "split": "rooms",
+        "colors": [
+          "#FF0000",
+          "#0022FF"
+        ]
+      }
     },
     {
       "title": "Strobe",
       "tileColor": "#8E8E93",
       "mode": "timed",
       "duration": 5000,
-      "effect": { "type": "strobe", "colors": ["#FFFFFF"], "interval": 300 }
+      "effect": {
+        "type": "strobe",
+        "colors": [
+          "#FFFFFF"
+        ],
+        "interval": 300
+      }
     },
     {
       "title": "Party",
       "tileColor": "#B620E0",
       "mode": "toggle",
-      "effect": { "type": "colorCycle", "colors": ["#FF0055", "#FFAA00", "#00DDFF", "#8833FF"], "interval": 1500 }
+      "effect": {
+        "type": "colorCycle",
+        "colors": [
+          "#FF0055",
+          "#FFAA00",
+          "#00DDFF",
+          "#8833FF"
+        ],
+        "interval": 1500
+      }
     },
     {
       "title": "Danger",
       "tileColor": "#FF3B30",
       "mode": "timed",
       "duration": 10000,
-      "effect": { "type": "breathe", "colors": ["#FF0000"] }
+      "effect": {
+        "type": "breathe",
+        "colors": [
+          "#FF0000"
+        ]
+      }
     },
     {
       "title": "Chill",
       "tileColor": "#3A7BD5",
       "mode": "toggle",
-      "effect": { "type": "solid", "colors": ["#2A5CFF"], "brightness": 120, "transitionTime": 10 }
+      "effect": {
+        "type": "solid",
+        "colors": [
+          "#2A5CFF"
+        ],
+        "brightness": 120,
+        "transitionTime": 10
+      }
+    },
+    {
+      "title": "Lightning",
+      "tileColor": "#5B6EE1",
+      "mode": "timed",
+      "duration": 8000,
+      "effect": {
+        "type": "sequence",
+        "sides": 1,
+        "brightness": 254,
+        "steps": [
+          {
+            "duration": 80,
+            "colors": [
+              "#DDE6FF"
+            ]
+          },
+          {
+            "duration": 120,
+            "colors": [
+              "off"
+            ]
+          },
+          {
+            "duration": 60,
+            "colors": [
+              "#FFFFFF"
+            ]
+          },
+          {
+            "duration": 1800,
+            "colors": [
+              "off"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Chase",
+      "tileColor": "#00B894",
+      "mode": "toggle",
+      "effect": {
+        "type": "sequence",
+        "sides": 3,
+        "split": "alternate",
+        "brightness": 254,
+        "steps": [
+          {
+            "duration": 400,
+            "colors": [
+              "#FF0055",
+              "off",
+              "off"
+            ]
+          },
+          {
+            "duration": 400,
+            "colors": [
+              "off",
+              "#00DDFF",
+              "off"
+            ]
+          },
+          {
+            "duration": 400,
+            "colors": [
+              "off",
+              "off",
+              "#FFCC00"
+            ]
+          }
+        ]
+      }
     }
   ]
 }

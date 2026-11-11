@@ -207,3 +207,67 @@ test('alert light effects are skipped while a pad pauses them', async () => {
     assert.deepEqual(calls, ['pulse']);
     assert.equal(reapplied, 1, 'the pad gets its look back after the alert');
 });
+
+// --- Custom sequences
+
+const { splitInto } = require('../src/modules/lightboard');
+
+test('sequences: sides, steps and "off" are normalized', () => {
+    const effect = normalizeEffect({
+        type: 'sequence', sides: 9, split: 'alternate',
+        steps: [
+            { duration: 10, colors: ['#FF0000', 'off', null, 'nope'] },
+            { duration: 250, transitionTime: 3, colors: ['#00FF00'] },
+            'junk',
+        ],
+    });
+    assert.equal(effect.sides, 4);
+    assert.equal(effect.split, 'alternate');
+    assert.equal(effect.steps.length, 3);
+    assert.deepEqual(effect.steps[0], { duration: 50, transitionTime: 0, colors: ['#FF0000', 'off', 'off', 'off'] });
+    assert.deepEqual(effect.steps[1], { duration: 250, transitionTime: 3, colors: ['#00FF00', 'off', 'off', 'off'] });
+    assert.deepEqual(effect.steps[2], { duration: 500, transitionTime: 0, colors: ['off', 'off', 'off', 'off'] });
+    assert.deepEqual(effect.colors, ['#FF0000', '#00FF00']);
+
+    const defaults = normalizeEffect({ type: 'sequence' });
+    assert.equal(defaults.sides, 2);
+    assert.deepEqual(defaults.steps.map(s => s.colors), [['#FF0000', '#0000FF'], ['#0000FF', '#FF0000']]);
+});
+
+test('lights split into any number of sides', () => {
+    const rooms = [{ id: 'a', lights: ['1', '2', '3'] }, { id: 'b', lights: ['4', '5'] }, { id: 'c', lights: ['6'] }];
+    const ids = ['1', '2', '3', '4', '5', '6'];
+    assert.deepEqual(splitInto(ids, rooms, 'rooms', 1), [ids]);
+    assert.deepEqual(splitInto(ids, rooms, 'rooms', 3), [['1', '2', '3'], ['4', '5'], ['6']]);
+    assert.deepEqual(splitInto(ids, rooms, 'rooms', 2), [['1', '2', '3'], ['4', '5', '6']]);
+    // more sides than rooms: deal lights out in turn
+    assert.deepEqual(splitInto(ids, rooms, 'rooms', 4), [['1', '5'], ['2', '6'], ['3'], ['4']]);
+    assert.deepEqual(splitInto(ids, rooms, 'alternate', 3), [['1', '4'], ['2', '5'], ['3', '6']]);
+});
+
+test('a sequence plays its steps in a loop, per side, skipping unchanged sides', async () => {
+    const hue = mockHue();
+    const board = new Lightboard(hue);
+    const lightning = pad({}, {
+        type: 'sequence', sides: 2, split: 'rooms', brightness: 200,
+        steps: [
+            { duration: 60, colors: ['#FF0000', '#0000FF'] },
+            { duration: 60, colors: ['off', '#0000FF'] },   // side B unchanged: not resent
+            { duration: 60, colors: ['#FF0000', 'off'] },
+        ],
+    });
+    await board.start(lightning, '86');
+    await sleep(400);
+    await board.stop();
+
+    const kitchen = hue.calls.filter(c => c.id === '3' && c.state.transitiontime === 0)
+        .map(c => (c.state.on ? (c.state.xy[0] === RED[0] ? 'R' : 'B') : 'off'));
+    const hallway = hue.calls.filter(c => c.id === '8' && c.state.transitiontime === 0)
+        .map(c => (c.state.on ? (c.state.xy[0] === RED[0] ? 'R' : 'B') : 'off'));
+    // Kitchen (3 lights) is side A, hallway side B. Looping from step 3 (red) back to step 1
+    // (red) doesn't change side A, so its next command is step 2's "off"
+    assert.deepEqual(kitchen.slice(0, 4), ['R', 'off', 'R', 'off']);
+    assert.deepEqual(hallway.slice(0, 3), ['B', 'off', 'B']);
+    // (restores at the end use each light's own brightness)
+    assert.ok(hue.calls.filter(c => c.state.on === true && c.state.transitiontime === 0).every(c => c.state.bri === 200));
+});

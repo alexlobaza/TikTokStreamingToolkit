@@ -16,22 +16,30 @@
 //           "duration": 10000,         ms, for timed pads
 //           "pauseAlerts": false,      skip alert light effects (gift, follow...) while active
 //           "effect": {
-//             "type": "police",        solid | strobe | colorCycle | breathe | police
+//             "type": "police",        solid | strobe | colorCycle | breathe | police | sequence
 //             "colors": ["#FF0000", "#0000FF"],
 //             "brightness": 254,       1-254
 //             "interval": 500,         ms per step (strobe, colorCycle, police swap)
 //             "transitionTime": 0,     fade per change, in 100 ms units
 //             "style": "swap",         police: "swap" (fast red/blue swaps) or "flash" (Hue's built-in flashing)
-//             "split": "rooms"         police: "rooms" (sides by room) or "alternate" (every other light)
+//             "split": "rooms"         police/sequence: "rooms" (sides by room) or "alternate" (every other light)
 //           }
 //         }
 //       ]
 //     }
 //   }
+//
+// A "sequence" is a custom effect: the lights are split into 1-4 sides, and a list of steps
+// sets each side's color (or "off") for a duration, with an optional fade. The steps repeat
+// until the pad stops. Police lights, for example, are two sides and two steps:
+//
+//   "effect": { "type": "sequence", "sides": 2, "split": "rooms", "brightness": 254, "steps": [
+//     { "duration": 500, "transitionTime": 0, "colors": ["#FF0000", "#0000FF"] },
+//     { "duration": 500, "transitionTime": 0, "colors": ["#0000FF", "#FF0000"] } ] }
 const { EventEmitter } = require('events');
 const { normalizeColor } = require('./hueEffects');
 
-const EFFECT_TYPES = ['solid', 'strobe', 'colorCycle', 'breathe', 'police'];
+const EFFECT_TYPES = ['solid', 'strobe', 'colorCycle', 'breathe', 'police', 'sequence'];
 
 const EFFECT_DEFAULTS = {
     solid:      { colors: ['#FFFFFF'], interval: 1000, transitionTime: 4 },
@@ -39,6 +47,17 @@ const EFFECT_DEFAULTS = {
     colorCycle: { colors: ['#FF0000', '#00FF00', '#0000FF'], interval: 2000, transitionTime: null }, // null: fade over the interval
     breathe:    { colors: ['#FF0000'], interval: 1000, transitionTime: 0 },
     police:     { colors: ['#FF0000', '#0000FF'], interval: 500, transitionTime: 0 },
+    sequence:   { colors: ['#FF0000', '#0000FF'], interval: 500, transitionTime: 0 },
+};
+
+const SEQUENCE = {
+    sides: [1, 4],
+    maxSteps: 32,
+    stepDuration: [50, 60000],
+    defaultSteps: [
+        { duration: 500, transitionTime: 0, colors: ['#FF0000', '#0000FF'] },
+        { duration: 500, transitionTime: 0, colors: ['#0000FF', '#FF0000'] },
+    ],
 };
 
 const LIMITS = {
@@ -90,7 +109,33 @@ function normalizeEffect(raw) {
         effect.style = input.style === 'flash' ? 'flash' : 'swap';
         effect.split = input.split === 'alternate' ? 'alternate' : 'rooms';
     }
+    if (type === 'sequence') {
+        effect.sides = clamp(input.sides, SEQUENCE.sides, 2);
+        effect.split = input.split === 'alternate' ? 'alternate' : 'rooms';
+        const steps = Array.isArray(input.steps) && input.steps.length > 0 ? input.steps : SEQUENCE.defaultSteps;
+        effect.steps = steps.slice(0, SEQUENCE.maxSteps).map(step => normalizeStep(step, effect.sides));
+        // For the default tile color: the colors the sequence uses
+        const used = [...new Set(effect.steps.flatMap(step => step.colors.filter(c => c !== 'off')))];
+        effect.colors = used.length > 0 ? used.slice(0, 8) : ['#FFFFFF'];
+        delete effect.interval;
+    }
     return effect;
+}
+
+/** One sequence step: a color (or "off") per side, a duration and a fade */
+function normalizeStep(raw, sides) {
+    const input = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+    const list = Array.isArray(input.colors) ? input.colors : [];
+    const colors = [];
+    for (let i = 0; i < sides; i++) {
+        const value = list[i];
+        colors.push(value !== 'off' && value !== null && value !== undefined && normalizeColor(value) ? value : 'off');
+    }
+    return {
+        duration: clamp(input.duration, SEQUENCE.stepDuration, 500),
+        transitionTime: clamp(input.transitionTime, LIMITS.transitionTime, 0),
+        colors,
+    };
 }
 
 /** Pads from `hue.lightboard.pads`, with defaults filled in and unique ids */
@@ -124,10 +169,11 @@ function normalizePads(hueConfig) {
 }
 
 /**
- * Two sides for police lights. "rooms" keeps each room on one side (balanced by light
- * count); with fewer than two rooms, or "alternate", every other light.
+ * Split lights into `count` sides. "rooms" keeps each room on one side (balanced by light
+ * count); with fewer rooms than sides, or "alternate", lights are dealt out in turn.
  */
-function splitSides(lightIds, rooms, mode) {
+function splitInto(lightIds, rooms, mode, count) {
+    if (count <= 1) return [[...lightIds]];
     if (mode === 'rooms' && Array.isArray(rooms)) {
         const byRoom = new Map();
         for (const id of lightIds) {
@@ -136,18 +182,23 @@ function splitSides(lightIds, rooms, mode) {
             if (!byRoom.has(key)) byRoom.set(key, []);
             byRoom.get(key).push(id);
         }
-        if (byRoom.size >= 2) {
-            const sides = [[], []];
+        if (byRoom.size >= count) {
+            const sides = Array.from({ length: count }, () => []);
             [...byRoom.values()]
                 .sort((a, b) => b.length - a.length)
                 .forEach(members => {
-                    const target = sides[0].length <= sides[1].length ? 0 : 1;
-                    sides[target].push(...members);
+                    const smallest = sides.reduce((best, side, i) => (side.length < sides[best].length ? i : best), 0);
+                    sides[smallest].push(...members);
                 });
             return sides;
         }
     }
-    return [lightIds.filter((_, i) => i % 2 === 0), lightIds.filter((_, i) => i % 2 === 1)];
+    return Array.from({ length: count }, (_, side) => lightIds.filter((_, i) => i % count === side));
+}
+
+/** Two sides for police lights */
+function splitSides(lightIds, rooms, mode) {
+    return splitInto(lightIds, rooms, mode, 2);
 }
 
 // --- Running pads -----------------------------------------------------------------------
@@ -197,15 +248,16 @@ class Lightboard extends EventEmitter {
             }
 
             let sides = null;
-            if (pad.effect.type === 'police') {
+            if (pad.effect.type === 'police' || pad.effect.type === 'sequence') {
+                const count = pad.effect.type === 'police' ? 2 : pad.effect.sides;
                 let rooms = [];
-                if (pad.effect.split === 'rooms') {
+                if (pad.effect.split === 'rooms' && count > 1) {
                     const groups = await this.hue.getAllGroups();
                     rooms = Object.entries(groups)
                         .filter(([, g]) => g.type === 'Room')
                         .map(([id, g]) => ({ id, lights: (g.lights || []).map(String) }));
                 }
-                sides = splitSides(lights, rooms, pad.effect.split);
+                sides = splitInto(lights, rooms, pad.effect.split, count);
             }
 
             const run = {
@@ -249,6 +301,9 @@ class Lightboard extends EventEmitter {
         const run = this.active;
         if (!run || run.cancelled) return;
         const { type, style } = run.pad.effect;
+        if (type === 'sequence') {
+            run.lastSent = []; // resend every side on the next step
+        }
         if (type === 'solid' || type === 'breathe' || (type === 'police' && style === 'flash')) {
             this.applyStatic(run).catch(error => console.error('[lightboard] Error reapplying pad:', error.message));
         }
@@ -331,6 +386,11 @@ class Lightboard extends EventEmitter {
             return;
         }
 
+        if (effect.type === 'sequence') {
+            await this.runSequence(run);
+            return;
+        }
+
         // Stepped effects: never faster than the bridge can take (each step sends one
         // command per light), so a short interval just runs as fast as possible
         for (let step = 0; !run.cancelled; step++) {
@@ -357,6 +417,36 @@ class Lightboard extends EventEmitter {
     }
 }
 
+// Lightboard.prototype is extended here to keep the sequence runner next to its docs
+/**
+ * Custom sequence: each step sets every side's color (or off), then waits its duration.
+ * Sides whose state doesn't change from the previous step are skipped, which saves bridge
+ * commands (each light command takes ~70 ms, so long steps on many lights run slower).
+ */
+Lightboard.prototype.runSequence = async function runSequence(run) {
+    const { brightness } = run.pad.effect;
+    const steps = run.pad.effect.steps.map(step => ({
+        ...step,
+        xy: step.colors.map(color => (color === 'off' ? null : normalizeColor(color))),
+    }));
+    run.lastSent = [];
+    for (let index = 0; !run.cancelled; index++) {
+        const step = steps[index % steps.length];
+        const began = Date.now();
+        for (let side = 0; side < run.sides.length; side++) {
+            const xy = step.xy[side];
+            const state = xy
+                ? { on: true, xy, bri: brightness, transitiontime: step.transitionTime }
+                : { on: false, transitiontime: step.transitionTime };
+            const key = JSON.stringify(state);
+            if (run.lastSent[side] === key) continue;
+            await this.send(run, run.sides[side], state);
+            run.lastSent[side] = key;
+        }
+        await this.wait(run, Math.max(0, step.duration - (Date.now() - began)));
+    }
+};
+
 let defaultLightboard = null;
 
 function getLightboard() {
@@ -373,6 +463,8 @@ module.exports = {
     getLightboard,
     normalizeEffect,
     normalizePads,
+    SEQUENCE,
+    splitInto,
     splitSides,
     restoreState,
 };

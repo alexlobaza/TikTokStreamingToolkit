@@ -217,6 +217,20 @@ very light on the bridge).
 }
 ```
 
+For anything else, use a custom `sequence`: split the lights into 1–4 sides (by room or every other light)
+and list steps. Each step gives every side a color or `"off"`, a duration in ms and an optional fade
+(`transitionTime`, 100 ms units). The steps repeat until the pad stops:
+
+```json
+"effect": { "type": "sequence", "sides": 2, "split": "rooms", "steps": [
+  { "duration": 500, "colors": ["#FF0000", "#0000FF"] },
+  { "duration": 500, "colors": ["#0000FF", "#FF0000"] }
+] }
+```
+
+Each step sends one command per light that changes, and a bridge takes about 10 per second, so very short
+steps on big groups run a little slower than set.
+
 Set `pauseAlerts` to skip gift/follow light effects while that pad runs. Starter pads are in
 `config/lightboard-templates.json`. API: `GET /api/hue/groups`, `GET /api/lightboard`,
 `POST /api/lightboard/:id/start|stop|toggle`, `POST /api/lightboard/stop`.
