@@ -22,6 +22,8 @@ function hueConfig() {
 
 /** Error response if Hue can't be used, else null */
 function hueUnavailable(res) {
+    // Hue may have been switched on a moment ago from the app; don't wait for the watcher
+    getConfigStore().reload();
     const hue = hueConfig();
     if (!hue.enabled) {
         res.status(400).json({ error: 'Hue lights are not enabled in config' });
