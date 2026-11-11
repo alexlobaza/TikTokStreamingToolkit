@@ -294,3 +294,29 @@ test('changing the alert group captures that group\'s baseline before the first 
     await hueEffects.playEffect('gift', { config, hue: fakeHue, preview, lightboard });
     assert.deepEqual(fetched, ['2']);
 });
+
+test('effect preview loops the pulse effect with the latest settings, and stops promptly', async () => {
+    const { createPreviewController } = require('../src/modules/huePreview');
+    await hue.fetchInitialGroupState('1');
+    const preview = createPreviewController(hue);
+    const pulse = colors => ({ count: 2, duration: 30, gap: 30, colors, brightnessIncrease: 10, transitionTime: 0 });
+
+    await preview.update('1', { pulse: pulse([[0.1, 0.1]]) });
+    await new Promise(resolve => setTimeout(resolve, 1300)); // one run + the rest between runs
+    await preview.update('1', { pulse: pulse([[0.6, 0.3]]) });
+    await new Promise(resolve => setTimeout(resolve, 1300));
+
+    const pulseColors = requests.filter(r => r.light === '1' && r.state.on === undefined).map(r => r.state.xy[0]);
+    assert.ok(pulseColors.filter(x => x === 0.1).length >= 2, 'first settings played (twice per run)');
+    assert.ok(pulseColors.filter(x => x === 0.6).length >= 2, 'updated settings played on a later run');
+
+    // A long effect stops after the current pulse, not after all of them
+    await preview.update('1', { pulse: { ...pulse([[0.2, 0.2]]), count: 20, duration: 50, gap: 50 } });
+    await new Promise(resolve => setTimeout(resolve, 150));
+    const started = Date.now();
+    assert.equal(await preview.stop(), true);
+    assert.ok(Date.now() - started < 400, `stopped in ${Date.now() - started}ms`);
+    requests = [];
+    await new Promise(resolve => setTimeout(resolve, 300));
+    assert.equal(requests.length, 0, 'nothing plays after stopping');
+});

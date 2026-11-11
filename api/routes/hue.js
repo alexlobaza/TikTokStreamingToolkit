@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const services = require('../../src/services');
 const { getConfigStore } = require('../../src/modules/configStore');
-const { LIGHT_EVENTS, LIMITS, normalizeColor, playEffect } = require('../../src/modules/hueEffects');
+const { LIGHT_EVENTS, LIMITS, normalizeColor, playEffect, resolveEffect, toPulseOptions } = require('../../src/modules/hueEffects');
 const { getPreviewController } = require('../../src/modules/huePreview');
 
 // Refetch initial lights state
@@ -63,9 +63,11 @@ router.post('/hue/test/:event', express.json(), async (req, res) => {
     }
 });
 
-// Live light preview while editing: shows one color at an effect's brightness on the whole
-// group until DELETE. Body: { "color": "#RRGGBB" or [x, y], "brightnessIncrease": 0-254 }.
-// Send updates as often as you like; the server only sends the latest to the bridge.
+// Live light preview while editing, until DELETE. Send updates as often as you like.
+// Body, to loop an event's effect (each run uses the latest settings):
+//   { "event": "gift", "effect": { ...effect fields, as in hue.effects } }
+// or, to hold one color at an effect's brightness:
+//   { "color": "#RRGGBB" or [x, y], "brightnessIncrease": 0-254 }
 router.post('/hue/preview', express.json(), async (req, res) => {
     const config = getConfigStore().current;
     if (!config.hue || !config.hue.enabled) {
@@ -77,6 +79,22 @@ router.post('/hue/preview', express.json(), async (req, res) => {
     }
 
     const body = req.body && typeof req.body === 'object' ? req.body : {};
+
+    if (body.event !== undefined) {
+        if (!Object.prototype.hasOwnProperty.call(LIGHT_EVENTS, body.event)) {
+            return res.status(404).json({ error: `Unknown event "${body.event}"` });
+        }
+        const { effect } = resolveEffect(body.event, config.hue, body.effect);
+        const pulse = { ...toPulseOptions(effect), turnOnIfOff: config.hue.lightUpWhenOff !== false };
+        try {
+            await getPreviewController().update(groupId, { pulse });
+            return res.json({ success: true, active: true, mode: 'effect' });
+        } catch (error) {
+            console.error('Error starting light preview:', error);
+            return res.status(500).json({ error: 'Error starting light preview', details: error.message });
+        }
+    }
+
     const xy = normalizeColor(body.color);
     if (!xy) {
         return res.status(400).json({ error: 'color must be "#RRGGBB" or [x, y]' });
