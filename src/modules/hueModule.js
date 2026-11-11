@@ -1,10 +1,8 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const { getConfigStore } = require('./configStore');
 
-// Read the config file
-const configPath = path.join(__dirname, '../../public/config.json');
-const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+// Bridge connection details are read once at startup (changing them needs a restart)
+const config = getConfigStore().current;
 
 const hueConfig = config.hue;
 const bridgeIP = hueConfig.hubIp;
@@ -31,6 +29,10 @@ async function fetchInitialGroupState(groupId) {
       console.error('Error fetching initial group state:', error.message);
     }
   }
+
+function hasInitialGroupState() {
+  return Object.keys(initialGroupState).length > 0;
+}
 
 async function setLightState(lightId, state) {
   try {
@@ -78,9 +80,12 @@ async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function pulseGroupLights(groupId, { duration = 5000, count = 1, color = null, brightnessIncrease = 100, transitionTime = 10 }) {
+// colors: optional list of xy colors, cycled one per pulse (takes precedence over `color`)
+// gap: ms between pulses; defaults to `duration`, which was the only behavior before
+async function pulseGroupLights(groupId, { duration = 5000, count = 1, color = null, colors = null, gap = duration, brightnessIncrease = 100, transitionTime = 10 }) {
     try {
       const groupLights = await getGroupLights(groupId);
+      const palette = Array.isArray(colors) && colors.length > 0 ? colors : (color ? [color] : []);
   
       for (let i = 0; i < count; i++) {
         // Increase brightness and change color
@@ -90,8 +95,9 @@ async function pulseGroupLights(groupId, { duration = 5000, count = 1, color = n
             bri: newBrightness,
             transitiontime: transitionTime
           };
-          if (color) {
-            state.xy = color;
+          const pulseColor = palette.length > 0 ? palette[i % palette.length] : null;
+          if (pulseColor) {
+            state.xy = pulseColor;
           }
           await setLightState(lightId, state);
         }
@@ -112,7 +118,7 @@ async function pulseGroupLights(groupId, { duration = 5000, count = 1, color = n
   
         // If it's not the last iteration, wait before the next pulse
         if (i < count - 1) {
-          await delay(duration);
+          await delay(gap);
         }
       }
     } catch (error) {
@@ -129,5 +135,6 @@ module.exports = {
   getLightState,
   setLightState,
   pulseGroupLights,
-  fetchInitialGroupState
+  fetchInitialGroupState,
+  hasInitialGroupState
 };

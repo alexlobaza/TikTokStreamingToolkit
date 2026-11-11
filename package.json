@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
   "dependencies": {
     "@googleapis/youtube": "^24.0.0",
     "axios": "^1.8.4",

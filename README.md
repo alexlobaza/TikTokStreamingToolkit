@@ -139,6 +139,48 @@ This endpoint:
 - Allows you to update the "initial" state without restarting the server
 - Useful if you manually adjust lights during a stream and want to preserve those settings as the new baseline
 
+### Customizing Light Effects
+
+Each alert can trigger a light effect: `gift`, `follow`, `subscribe`, `superFan` and `share`. The built-in
+effects are defined in `config/hue-effects.defaults.json`. To change one, add `hue.effects` to your
+`config.json`. Only list what you want to change; everything else keeps its default:
+
+```json
+{
+  "hue": {
+    "enabled": true,
+    "...": "...",
+    "effects": {
+      "gift": { "colors": ["#FFAA00", "#FF00AA"], "count": 6 },
+      "subscribe": { "duration": 300 },
+      "superFan": { "enabled": true },
+      "share": { "enabled": false }
+    }
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `enabled` | `false` turns off the light effect for that event (the Super Fan effect is off by default) |
+| `colors` | List of colors, one per pulse, cycling: `"#RRGGBB"` or Hue `[x, y]` values. `color` sets a single color |
+| `count` | Number of pulses (1–50) |
+| `duration` | Milliseconds the lights stay lit on each pulse |
+| `gap` | Milliseconds between pulses (defaults to `duration`) |
+| `brightnessIncrease` | Brightness added on top of the lights' normal level (254 = full) |
+| `transitionTime` | Fade time for each change, in units of 100 ms (`10` = 1 second) |
+
+Changes to `config.json` are picked up while the server is running, so there's no need to restart
+mid-stream. Invalid values fall back to the defaults, with a warning in the console.
+
+To try an effect without waiting for an alert:
+
+```bash
+curl -X POST http://localhost:8082/api/hue/test/gift
+# or preview settings without saving them:
+curl -X POST http://localhost:8082/api/hue/test/gift -H 'Content-Type: application/json' -d '{"colors":["#00FFFF"],"count":2}'
+```
+
 ## Configuration Guide
 
 ### Basic Settings

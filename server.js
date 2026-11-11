@@ -83,6 +83,9 @@ if(config.hue.enabled) {
   hueModule.fetchInitialGroupState(config.hue.targetGroupId);
 }
 
+// Pick up config.json edits while running (used for Hue light effects)
+require('./src/modules/configStore').getConfigStore().watch();
+
 // Serve widget pages
 const widgetPages = [
   { path: '/follower-goal', file: 'follower-goal/follower-goal.html' },

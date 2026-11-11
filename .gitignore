@@ -20,6 +20,8 @@ viewers.json
 
 # Configuration
 public/config.json
+# Sounds added by users (e.g. imported through TikTokWidgetsManager)
+public/sounds/custom/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

@@ -2,6 +2,7 @@
 const { getGlobalConnectionCount } = require('../services/tiktok');
 const { WebcastEvent } = require('tiktok-live-connector');
 const apiClient = require('../utils/apiClient');
+const { LIGHT_EVENTS, playEffect } = require('../modules/hueEffects');
 
 // TikTok connection wrapper setup
 function setupEventListeners(socket, tiktokConnectionWrapper, config, services) {
@@ -229,51 +230,14 @@ function setupSocketHandlers(io, config, services) {
             }
         });
 
-        // Listen for light effect triggers from client
-        socket.on('subscribeLights', () => {
-            if (config.hue.enabled) {
-                services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                    duration: 150,
-                    count: 10,
-                    color: [0.67, 0.33],
-                    brightnessIncrease: 400,
-                    transitionTime: 10
-                }).catch(error => console.error('Error pulsing lights for subscribe:', error));
-            }
-        });
-        socket.on('newFollowerLights', () => {
-            if (config.hue.enabled) {
-                services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                    duration: 100,
-                    count: 4,
-                    color: [0.45, 0.41], // Warm white
-                    brightnessIncrease: 300,
-                    transitionTime: 10
-                }).catch(error => console.error('Error pulsing lights for new follower:', error));
-            }
-        });
-        socket.on('giftLights', () => {
-            if (config.hue.enabled) {
-                services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                    duration: 100,
-                    count: 3,
-                    color: [0.55, 0.45],
-                    brightnessIncrease: 300,
-                    transitionTime: 10
-                }).catch(error => console.error('Error pulsing lights for gift:', error));
-            }
-        });
-        socket.on('shareLights', () => {
-            if (config.hue.enabled) {
-                services.hue.pulseGroupLights(config.hue.targetGroupId, {
-                    duration: 100,
-                    count: 2,
-                    color: [0.5, 0.5], // Neutral color
-                    brightnessIncrease: 300,
-                    transitionTime: 10
-                }).catch(error => console.error('Error pulsing lights for share:', error));
-            }
-        });
+        // Light effects: the overlay emits `<type>Lights` after showing an alert. Effects are
+        // resolved from config.json at trigger time, so edits apply without a restart.
+        for (const [eventKey, { socketEvent }] of Object.entries(LIGHT_EVENTS)) {
+            socket.on(socketEvent, () => {
+                playEffect(eventKey)
+                    .catch(error => console.error(`Error pulsing lights for ${eventKey}:`, error));
+            });
+        }
     });
 
     // Emit global connection statistics

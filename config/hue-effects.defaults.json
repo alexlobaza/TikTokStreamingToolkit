@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "events": {
+    "gift": {
+      "label": "Gift",
+      "socketEvent": "giftLights",
+      "effect": {
+        "enabled": true,
+        "colors": [[0.55, 0.45]],
+        "count": 3,
+        "duration": 100,
+        "gap": 100,
+        "brightnessIncrease": 300,
+        "transitionTime": 10
+      }
+    },
+    "follow": {
+      "label": "Follow",
+      "socketEvent": "newFollowerLights",
+      "effect": {
+        "enabled": true,
+        "colors": [[0.45, 0.41]],
+        "count": 4,
+        "duration": 100,
+        "gap": 100,
+        "brightnessIncrease": 300,
+        "transitionTime": 10
+      }
+    },
+    "subscribe": {
+      "label": "Subscribe",
+      "socketEvent": "subscribeLights",
+      "effect": {
+        "enabled": true,
+        "colors": [[0.67, 0.33]],
+        "count": 10,
+        "duration": 150,
+        "gap": 150,
+        "brightnessIncrease": 400,
+        "transitionTime": 10
+      }
+    },
+    "superFan": {
+      "label": "Super Fan",
+      "socketEvent": "superFanLights",
+      "effect": {
+        "enabled": false,
+        "colors": [[0.38, 0.16]],
+        "count": 6,
+        "duration": 150,
+        "gap": 150,
+        "brightnessIncrease": 300,
+        "transitionTime": 10
+      }
+    },
+    "share": {
+      "label": "Share",
+      "socketEvent": "shareLights",
+      "effect": {
+        "enabled": true,
+        "colors": [[0.5, 0.5]],
+        "count": 2,
+        "duration": 100,
+        "gap": 100,
+        "brightnessIncrease": 300,
+        "transitionTime": 10
+      }
+    }
+  }
+}
