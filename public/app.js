@@ -68,6 +68,11 @@ class TikTokIOConnection {
 
 let connection = new TikTokIOConnection();
 
+// ?preview: the manager app's built-in overlay preview. It only shows test alerts: it doesn't
+// connect to TikTok (every overlay page opens its own connection, so live events would be
+// handled twice) and doesn't report anything back to the server.
+const PREVIEW_MODE = new URLSearchParams(window.location.search).has('preview');
+
 
 let Config = {
     firstConnect: true,
@@ -78,7 +83,7 @@ let Config = {
         fetch("/config.json").then((response) => response.json()).then((json) => {
             Config = Object.assign({}, Config, json);
 
-            if (this.firstConnect || this.retryCount > 0) {
+            if (!PREVIEW_MODE && (this.firstConnect || this.retryCount > 0)) {
                 this.connectWithRetry();
             }
 
@@ -119,16 +124,18 @@ class Announcement {
     #soundUrl;
     #circleCrop;
     #type;
+    #isTest;
     static #queue = [];
     static #isProcessing = false;
 
-    constructor(uniqueId, imageUrl, message, soundUrl, circleCrop = false, type = null) {
+    constructor(uniqueId, imageUrl, message, soundUrl, circleCrop = false, type = null, isTest = false) {
         this.#uniqueId = uniqueId;
         this.#imageUrl = imageUrl;
         this.#message = message;
         this.#soundUrl = soundUrl;
         this.#circleCrop = circleCrop;
         this.#type = type;
+        this.#isTest = isTest;
     }
 
     static #getAnimatedLetters(name, _html = "") {
@@ -161,8 +168,9 @@ class Announcement {
         this.#isProcessing = true;
         const announcement = this.#queue.shift();
 
-        // Emit light event based on announcement type
-        if (announcement.#type) {
+        // Emit light event based on announcement type. Not for test alerts: the server plays
+        // their light effect once, however many overlays are open.
+        if (announcement.#type && !announcement.#isTest) {
             connection.socket.emit(announcement.#type + 'Lights');
         }
 
@@ -281,7 +289,8 @@ alertHandlers.gift = (data) => {
         `sent ${dataSubset["repeatCount"]}x ${dataSubset["giftName"]}`,
         Config["sounds"]["gift"][dataSubset["giftName"].toLowerCase()] || Config["sounds"]["gift"]["default"],
         false,
-        'gift'
+        'gift',
+        data.isTest === true
     );
 
     Announcement.addToQueue(announcement);
@@ -309,7 +318,8 @@ alertHandlers.follow = (data) => {
         `is now following!`,
         followSoundObj,
         true,
-        'newFollower'
+        'newFollower',
+        data.isTest === true
     );
 
     Announcement.addToQueue(announcement);
@@ -334,7 +344,8 @@ alertHandlers.subscribe = (data) => {
         `just subscribed!`,
         subscribeSound || null,
         true,
-        'subscribe'
+        'subscribe',
+        data.isTest === true
     )
 
     Announcement.addToQueue(announcement);
@@ -353,7 +364,8 @@ alertHandlers.superFan = (data) => {
         `became a Super Fan!`,
         superFanSound || null,
         true,
-        'superFan'
+        'superFan',
+        data.isTest === true
     )
     Announcement.addToQueue(announcement);
 };
@@ -376,7 +388,8 @@ alertHandlers.share = (data) => {
         `shared the stream!`,
         shareSound || null,
         true,
-        'share'
+        'share',
+        data.isTest === true
     )
     Announcement.addToQueue(announcement);
 };
