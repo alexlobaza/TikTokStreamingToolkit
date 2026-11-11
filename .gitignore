@@ -20,6 +20,8 @@ viewers.json
 
 # Configuration
 public/config.json
+# Backup written by TikTokWidgetsManager before its first edit
+public/config.json.bak
 # Sounds added by users (e.g. imported through TikTokWidgetsManager)
 public/sounds/custom/
 
