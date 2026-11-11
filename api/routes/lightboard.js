@@ -49,6 +49,9 @@ async function startPad(pad, res) {
 }
 
 function findPad(id) {
+    // Read config.json now rather than waiting for the watcher: a pad saved in the app a
+    // moment ago (or just edited) should play right away, with its latest settings
+    getConfigStore().reload();
     return normalizePads(hueConfig()).find(p => p.id === id) || null;
 }
 

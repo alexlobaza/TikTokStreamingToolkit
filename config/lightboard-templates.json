@@ -15,7 +15,7 @@
     },
     {
       "title": "Strobe",
-      "tileColor": "#EDEDED",
+      "tileColor": "#8E8E93",
       "mode": "timed",
       "duration": 5000,
       "effect": { "type": "strobe", "colors": ["#FFFFFF"], "interval": 300 }
