@@ -178,3 +178,70 @@ test('the watcher picks up changes to config.json', async () => {
         console.log = originalLog;
     }
 });
+
+test('light preview: shows the color, coalesces rapid updates, restores on stop', async () => {
+    const { createPreviewController } = require('../src/modules/huePreview');
+    await hue.fetchInitialGroupState('1');
+    const preview = createPreviewController(hue);
+
+    await preview.update('1', { xy: [0.1, 0.1], brightnessIncrease: 50 });
+    // Rapid updates while the first is being applied: only the last one should be sent next
+    await preview.update('1', { xy: [0.2, 0.2], brightnessIncrease: 50 });
+    await preview.update('1', { xy: [0.3, 0.4], brightnessIncrease: 254 });
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const shown = stripTimes(requests);
+    assert.deepEqual(shown.slice(0, 2), [
+        { light: '1', state: { on: true, xy: [0.1, 0.1], bri: 150, transitiontime: 2 } },
+        { light: '2', state: { on: true, xy: [0.1, 0.1], bri: 250, transitiontime: 2 } },
+    ]);
+    assert.deepEqual(shown.slice(-2), [
+        { light: '1', state: { on: true, xy: [0.3, 0.4], bri: 254, transitiontime: 2 } },
+        { light: '2', state: { on: true, xy: [0.3, 0.4], bri: 254, transitiontime: 2 } },
+    ]);
+    assert.ok(!shown.some(r => r.state.xy && r.state.xy[0] === 0.2), 'intermediate update should be skipped');
+    assert.equal(preview.isActive(), true);
+
+    requests = [];
+    assert.equal(await preview.stop(), true);
+    assert.deepEqual(stripTimes(requests), [
+        { light: '1', state: { on: true, bri: 100, xy: [0.3, 0.3], transitiontime: 4 } },
+        { light: '2', state: { on: true, bri: 200, xy: [0.4, 0.4], transitiontime: 4 } },
+    ]);
+    assert.equal(preview.isActive(), false);
+    assert.equal(await preview.stop(), false);
+});
+
+test('an effect played during a preview returns to the preview color', async () => {
+    const { createPreviewController } = require('../src/modules/huePreview');
+    await hue.fetchInitialGroupState('1');
+    const preview = createPreviewController(hue);
+    await preview.update('1', { xy: [0.6, 0.3], brightnessIncrease: 20 });
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    writeConfig({ gift: { count: 1, duration: 10, colors: [[0.1, 0.8]] } });
+    configStore.reload();
+    requests = [];
+    await hueEffects.playEffect('gift', { preview });
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const last = stripTimes(requests).slice(-2);
+    assert.deepEqual(last.map(r => r.state.xy), [[0.6, 0.3], [0.6, 0.3]]);
+    await preview.stop();
+});
+
+test('an idle preview restores the lights by itself', async () => {
+    const { createPreviewController } = require('../src/modules/huePreview');
+    await hue.fetchInitialGroupState('1');
+    const preview = createPreviewController(hue, { idleTimeoutMs: 100 });
+    const originalLog = console.log;
+    console.log = () => {};
+    try {
+        await preview.update('1', { xy: [0.6, 0.3], brightnessIncrease: 20 });
+        await new Promise(resolve => setTimeout(resolve, 300));
+        assert.equal(preview.isActive(), false);
+        assert.deepEqual(stripTimes(requests).slice(-1)[0].state, { on: true, bri: 200, xy: [0.4, 0.4], transitiontime: 4 });
+    } finally {
+        console.log = originalLog;
+    }
+});

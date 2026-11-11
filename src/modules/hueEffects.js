@@ -205,6 +205,7 @@ function warnOnce(issues) {
  * @param {boolean} [options.force]   play even if the effect is disabled (preview)
  * @param {boolean} [options.wait=true] false resolves once the effect has started
  * @param {object} [options.hue]      hue module (tests)
+ * @param {object} [options.preview]  light preview controller (tests)
  * @param {object} [options.config]   config object instead of the live one (tests)
  * @returns {Promise<{ played: boolean, reason?: string, effect?: object }>}
  */
@@ -237,7 +238,10 @@ async function playEffect(eventKey, options = {}) {
         await hue.fetchInitialGroupState(groupId);
     }
 
-    const pulse = hue.pulseGroupLights(groupId, toPulseOptions(effect));
+    const preview = options.preview || require('./huePreview').getPreviewController();
+    // A pulse ends by reverting to the baseline; put an active light preview back afterwards
+    const pulse = hue.pulseGroupLights(groupId, toPulseOptions(effect))
+        .finally(() => preview.reapplyIfActive());
     if (options.wait === false) {
         pulse.catch(error => console.error(`Error pulsing lights for ${eventKey}:`, error.message));
     } else {

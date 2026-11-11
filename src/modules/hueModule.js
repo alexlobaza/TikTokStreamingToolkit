@@ -34,6 +34,11 @@ function hasInitialGroupState() {
   return Object.keys(initialGroupState).length > 0;
 }
 
+// Baseline state captured by fetchInitialGroupState (what effects revert to)
+function getInitialLightState(lightId) {
+  return initialGroupState[lightId];
+}
+
 async function setLightState(lightId, state) {
   try {
     const response = await axiosInstance.put(`/lights/${lightId}/state`, state);
@@ -136,5 +141,7 @@ module.exports = {
   setLightState,
   pulseGroupLights,
   fetchInitialGroupState,
-  hasInitialGroupState
+  hasInitialGroupState,
+  getInitialLightState,
+  getGroupLights
 };

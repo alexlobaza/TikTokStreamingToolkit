@@ -181,6 +181,26 @@ curl -X POST http://localhost:8082/api/hue/test/gift
 curl -X POST http://localhost:8082/api/hue/test/gift -H 'Content-Type: application/json' -d '{"colors":["#00FFFF"],"count":2}'
 ```
 
+To hold a color on the lights while choosing one, use a live preview. It switches the group on at the effect's
+brightness, and the lights go back to normal when you end it, or on their own after 10 idle minutes:
+
+```bash
+curl -X POST http://localhost:8082/api/hue/preview -H 'Content-Type: application/json' -d '{"color":"#FF00AA","brightnessIncrease":200}'
+curl -X DELETE http://localhost:8082/api/hue/preview
+```
+
+### Test Alerts
+
+To see an alert in the overlay, with its sound and light effect, without waiting for a real one:
+
+```bash
+curl -X POST http://localhost:8082/api/test-alert/follow
+curl -X POST http://localhost:8082/api/test-alert/gift -H 'Content-Type: application/json' -d '{"giftName":"Rose"}'
+```
+
+Test alerts appear only in the alert overlay (`http://localhost:8082/`). They don't count towards goals, rankings,
+the comments page or the stream logs.
+
 ## Configuration Guide
 
 ### Basic Settings

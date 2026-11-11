@@ -252,7 +252,11 @@ class Announcement {
 }
 
 
-connection.on('gift', (data) => {
+// Alert handlers by event type. Live events and test alerts (sent from the manager app via
+// POST /api/test-alert/:event) go through the same code.
+const alertHandlers = {};
+
+alertHandlers.gift = (data) => {
     if (!Config["enabled"]["gift"]) {
         return;
     }
@@ -276,12 +280,12 @@ connection.on('gift', (data) => {
     );
 
     Announcement.addToQueue(announcement);
-});
+};
 
 
 const followed = {}
 
-connection.on("follow", (data) => {
+alertHandlers.follow = (data) => {
     if (!Config["enabled"]["follow"]) {
         return;
     }
@@ -305,12 +309,14 @@ connection.on("follow", (data) => {
 
     Announcement.addToQueue(announcement);
 
-    // Emit a custom event for new follower
-    connection.socket.emit('newFollower', data );
+    // Emit a custom event for new follower (not for tests: it updates the follower count)
+    if (!data.isTest) {
+        connection.socket.emit('newFollower', data );
+    }
 
-})
+};
 
-connection.on("subscribe", (data) => {
+alertHandlers.subscribe = (data) => {
 
     if (!Config["enabled"]["subscribe"]) {
         return;
@@ -328,9 +334,9 @@ connection.on("subscribe", (data) => {
 
     Announcement.addToQueue(announcement);
 
-})
+};
 
-connection.on("superFan", (data) => {
+alertHandlers.superFan = (data) => {
     if (!Config["enabled"]["superFan"]) {
         return;
     }
@@ -345,9 +351,9 @@ connection.on("superFan", (data) => {
         'superFan'
     )
     Announcement.addToQueue(announcement);
-})
+};
 
-connection.on("share", (data) => {
+alertHandlers.share = (data) => {
     // Check if share announcements are enabled (default to true if not specified)
     if (Config["enabled"]["share"] === false) {
         return;
@@ -368,4 +374,16 @@ connection.on("share", (data) => {
         'share'
     )
     Announcement.addToQueue(announcement);
-})
+};
+
+for (const [type, handler] of Object.entries(alertHandlers)) {
+    connection.on(type, handler);
+}
+
+// Test alerts use their own socket event so other widgets (comments, goals, rankings)
+// don't count them
+connection.on('testAlert', ({ type, data } = {}) => {
+    if (Object.prototype.hasOwnProperty.call(alertHandlers, type)) {
+        alertHandlers[type]({ ...data, isTest: true });
+    }
+});

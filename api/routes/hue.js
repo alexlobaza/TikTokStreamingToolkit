@@ -3,7 +3,8 @@ const express = require('express');
 const router = express.Router();
 const services = require('../../src/services');
 const { getConfigStore } = require('../../src/modules/configStore');
-const { LIGHT_EVENTS, playEffect } = require('../../src/modules/hueEffects');
+const { LIGHT_EVENTS, LIMITS, normalizeColor, playEffect } = require('../../src/modules/hueEffects');
+const { getPreviewController } = require('../../src/modules/huePreview');
 
 // Refetch initial lights state
 router.post('/hue/refetch-initial-state', async (req, res) => {
@@ -11,6 +12,10 @@ router.post('/hue/refetch-initial-state', async (req, res) => {
         const config = getConfigStore().current;
         if (!config.hue || !config.hue.enabled) {
             return res.status(400).json({ error: 'Hue lights are not enabled in config' });
+        }
+        if (getPreviewController().isActive()) {
+            // Would capture the preview color as the lights' normal state
+            return res.status(409).json({ error: 'Turn off the light preview before refetching the lights state' });
         }
 
         const groupId = config.hue.targetGroupId;
@@ -55,6 +60,48 @@ router.post('/hue/test/:event', express.json(), async (req, res) => {
     } catch (error) {
         console.error(`Error testing light effect for ${eventKey}:`, error);
         res.status(500).json({ error: 'Error testing light effect', details: error.message });
+    }
+});
+
+// Live light preview while editing: shows one color at an effect's brightness on the whole
+// group until DELETE. Body: { "color": "#RRGGBB" or [x, y], "brightnessIncrease": 0-254 }.
+// Send updates as often as you like; the server only sends the latest to the bridge.
+router.post('/hue/preview', express.json(), async (req, res) => {
+    const config = getConfigStore().current;
+    if (!config.hue || !config.hue.enabled) {
+        return res.status(400).json({ error: 'Hue lights are not enabled in config' });
+    }
+    const groupId = config.hue.targetGroupId;
+    if (!groupId) {
+        return res.status(400).json({ error: 'Hue target group ID is not configured' });
+    }
+
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const xy = normalizeColor(body.color);
+    if (!xy) {
+        return res.status(400).json({ error: 'color must be "#RRGGBB" or [x, y]' });
+    }
+    const [min, max] = LIMITS.brightnessIncrease;
+    const brightnessIncrease = typeof body.brightnessIncrease === 'number' && Number.isFinite(body.brightnessIncrease)
+        ? Math.min(max, Math.max(min, body.brightnessIncrease))
+        : 254;
+
+    try {
+        await getPreviewController().update(groupId, { xy, brightnessIncrease });
+        res.json({ success: true, active: true });
+    } catch (error) {
+        console.error('Error starting light preview:', error);
+        res.status(500).json({ error: 'Error starting light preview', details: error.message });
+    }
+});
+
+router.delete('/hue/preview', async (req, res) => {
+    try {
+        const restored = await getPreviewController().stop();
+        res.json({ success: true, restored });
+    } catch (error) {
+        console.error('Error ending light preview:', error);
+        res.status(500).json({ error: 'Error ending light preview', details: error.message });
     }
 });
 
