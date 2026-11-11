@@ -81,6 +81,17 @@ async function getGroupLights(groupId) {
   }
 }
 
+// Everything the bridge knows, for the group picker and lightboard (rooms, zones, entertainment areas)
+async function getAllGroups() {
+  const response = await axiosInstance.get('/groups');
+  return response.data;
+}
+
+async function getAllLights() {
+  const response = await axiosInstance.get('/lights');
+  return response.data;
+}
+
 async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -148,5 +159,7 @@ module.exports = {
   fetchInitialGroupState,
   hasInitialGroupState,
   getInitialLightState,
-  getGroupLights
+  getGroupLights,
+  getAllGroups,
+  getAllLights
 };

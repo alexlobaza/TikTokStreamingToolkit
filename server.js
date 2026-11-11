@@ -86,6 +86,24 @@ if(config.hue.enabled) {
 // Pick up config.json edits while running (used for Hue light effects)
 require('./src/modules/configStore').getConfigStore().watch();
 
+// Lightboard: tell open boards (web page, app) when a pad starts or stops
+const { getLightboard } = require('./src/modules/lightboard');
+const { getPreviewController } = require('./src/modules/huePreview');
+getLightboard().on('change', state => io.emit('lightboardState', state));
+
+// If the server is stopped while a lightboard pad or light preview is running, put the
+// lights back first (giving up after a couple of seconds). A second signal exits at once.
+let shuttingDown = false;
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    if (shuttingDown) process.exit(0);
+    shuttingDown = true;
+    const restore = Promise.allSettled([getLightboard().stop(), getPreviewController().stop()]);
+    Promise.race([restore, new Promise(resolve => setTimeout(resolve, 2500))])
+      .finally(() => process.exit(0));
+  });
+}
+
 // Serve widget pages
 const widgetPages = [
   { path: '/follower-goal', file: 'follower-goal/follower-goal.html' },
@@ -95,6 +113,7 @@ const widgetPages = [
   { path: '/text-scroller', file: 'text-scroller/text-scroller.html' },
   { path: '/comments', file: 'comments/comments.html' },
   { path: '/image-slider', file: 'image-slider/image-slider.html' },
+  { path: '/lightboard', file: 'lightboard/lightboard.html' },
 ];
 widgetPages.forEach(({ path: routePath, file }) => {
   app.get(routePath, (req, res) => {

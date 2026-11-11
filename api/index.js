@@ -9,6 +9,7 @@ const giftersRoutes = require('./routes/gifters');
 const likersRoutes = require('./routes/likers');
 const hueRoutes = require('./routes/hue');
 const testAlertRoutes = require('./routes/testAlerts');
+const lightboardRoutes = require('./routes/lightboard');
 
 // Use route modules
 router.use('/comments', commentsRoutes);
@@ -17,5 +18,6 @@ router.use('/', giftersRoutes);   // Contains /gifter-rank
 router.use('/', likersRoutes);    // Contains /like-rank
 router.use('/', hueRoutes);       // Contains /hue/refetch-initial-state, /hue/test/:event
 router.use('/', testAlertRoutes); // Contains /test-alert/:event
+router.use('/', lightboardRoutes); // Contains /hue/groups, /lightboard/...
 
 module.exports = router;

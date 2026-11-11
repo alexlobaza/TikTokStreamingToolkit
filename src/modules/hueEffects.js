@@ -210,6 +210,7 @@ function warnOnce(issues) {
  * @param {boolean} [options.wait=true] false resolves once the effect has started
  * @param {object} [options.hue]      hue module (tests)
  * @param {object} [options.preview]  light preview controller (tests)
+ * @param {object} [options.lightboard] lightboard (tests)
  * @param {object} [options.config]   config object instead of the live one (tests)
  * @returns {Promise<{ played: boolean, reason?: string, effect?: object }>}
  */
@@ -231,6 +232,11 @@ async function playEffect(eventKey, options = {}) {
         return { played: false, reason: `Light effect for "${eventKey}" is disabled` };
     }
 
+    const lightboard = options.lightboard || require('./lightboard').getLightboard();
+    if (lightboard.isPausingAlerts() && !options.force) {
+        return { played: false, reason: 'A lightboard pad that pauses alert lights is running' };
+    }
+
     const groupId = hueConfig.targetGroupId;
     if (!groupId) {
         return { played: false, reason: 'Hue target group ID is not configured' };
@@ -249,7 +255,10 @@ async function playEffect(eventKey, options = {}) {
         // Lights that are off flash on for effects unless hue.lightUpWhenOff is false
         turnOnIfOff: hueConfig.lightUpWhenOff !== false,
     })
-        .finally(() => preview.reapplyIfActive());
+        .finally(() => {
+            preview.reapplyIfActive();
+            lightboard.reapplyIfActive();
+        });
     if (options.wait === false) {
         pulse.catch(error => console.error(`Error pulsing lights for ${eventKey}:`, error.message));
     } else {

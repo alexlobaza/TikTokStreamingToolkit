@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "title": "Police",
+      "tileColor": "#2244FF",
+      "mode": "toggle",
+      "effect": { "type": "police", "style": "swap", "split": "rooms", "colors": ["#FF0000", "#0022FF"], "interval": 500 }
+    },
+    {
+      "title": "Police (flash)",
+      "tileColor": "#C8102E",
+      "mode": "toggle",
+      "effect": { "type": "police", "style": "flash", "split": "rooms", "colors": ["#FF0000", "#0022FF"] }
+    },
+    {
+      "title": "Strobe",
+      "tileColor": "#EDEDED",
+      "mode": "timed",
+      "duration": 5000,
+      "effect": { "type": "strobe", "colors": ["#FFFFFF"], "interval": 300 }
+    },
+    {
+      "title": "Party",
+      "tileColor": "#B620E0",
+      "mode": "toggle",
+      "effect": { "type": "colorCycle", "colors": ["#FF0055", "#FFAA00", "#00DDFF", "#8833FF"], "interval": 1500 }
+    },
+    {
+      "title": "Danger",
+      "tileColor": "#FF3B30",
+      "mode": "timed",
+      "duration": 10000,
+      "effect": { "type": "breathe", "colors": ["#FF0000"] }
+    },
+    {
+      "title": "Chill",
+      "tileColor": "#3A7BD5",
+      "mode": "toggle",
+      "effect": { "type": "solid", "colors": ["#2A5CFF"], "brightness": 120, "transitionTime": 10 }
+    }
+  ]
+}

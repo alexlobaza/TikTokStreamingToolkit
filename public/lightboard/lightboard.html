@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Lightboard</title>
+    <style>
+        :root {
+            --bg: #0e0f12;
+            --panel: #17191e;
+            --text: #f2f3f5;
+            --muted: #8b8f98;
+            --danger: #ff4d5e;
+            --radius: 16px;
+            color-scheme: dark;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+            font: 15px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent; }
+        header { display: flex; align-items: center; gap: 12px; padding: 14px 16px 6px; }
+        header h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+        #status { color: var(--muted); font-size: 13px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #stopAll { border: 0; border-radius: 999px; padding: 9px 16px; font: inherit; font-weight: 600;
+            background: var(--danger); color: white; cursor: pointer; }
+        #stopAll:disabled { opacity: .35; cursor: default; }
+        main { padding: 10px 16px 24px; display: grid; gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(min(150px, 44vw), 1fr)); }
+        .pad { position: relative; aspect-ratio: 1 / 1; border: 0; border-radius: var(--radius); padding: 14px;
+            display: flex; flex-direction: column; justify-content: space-between; text-align: left;
+            font: inherit; color: white; cursor: pointer; overflow: hidden;
+            background: var(--tile); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+            transition: transform .08s ease, box-shadow .2s ease, filter .2s ease; filter: saturate(.85) brightness(.8); }
+        .pad::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255,255,255,.18), rgba(0,0,0,.35)); pointer-events: none; }
+        .pad:active { transform: scale(.97); }
+        .pad .title { position: relative; z-index: 1; font-size: 18px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.5); word-break: break-word; }
+        .pad .meta { position: relative; z-index: 1; font-size: 12px; font-weight: 600; opacity: .9; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+        .pad.active { filter: none; box-shadow: 0 0 0 3px white, 0 0 28px 4px var(--tile); animation: glow 1.2s ease-in-out infinite alternate; }
+        @keyframes glow { from { box-shadow: 0 0 0 3px white, 0 0 12px 2px var(--tile); } to { box-shadow: 0 0 0 3px white, 0 0 32px 8px var(--tile); } }
+        .pad .progress { position: absolute; left: 0; bottom: 0; height: 5px; background: white; z-index: 2; opacity: .9; }
+        .empty { grid-column: 1 / -1; color: var(--muted); text-align: center; padding: 48px 16px; background: var(--panel); border-radius: var(--radius); }
+        @media (prefers-reduced-motion: reduce) { .pad.active { animation: none; } }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Lightboard</h1>
+    <div id="status">Connecting…</div>
+    <button id="stopAll" disabled>Stop</button>
+</header>
+<main id="board"></main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(() => {
+    const board = document.getElementById('board');
+    const status = document.getElementById('status');
+    const stopAll = document.getElementById('stopAll');
+    let pads = [];
+    let active = null;
+    let message = '';
+    let rendered = '';
+
+    const modeLabel = pad => pad.mode === 'timed' ? `${Math.round(pad.duration / 1000)} s` : 'Press to start / stop';
+
+    function render() {
+        // Only rebuild when something changed, so a tap never lands mid-rebuild
+        const snapshot = JSON.stringify([pads, active, message]);
+        if (snapshot === rendered) return;
+        rendered = snapshot;
+        board.textContent = '';
+        if (pads.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty';
+            empty.textContent = 'No pads yet. Create them in TikTok Live Widgets → Lightboard.';
+            board.appendChild(empty);
+        }
+        for (const pad of pads) {
+            const button = document.createElement('button');
+            button.className = 'pad' + (active && active.id === pad.id ? ' active' : '');
+            button.style.setProperty('--tile', pad.tileColor);
+            const title = document.createElement('div');
+            title.className = 'title';
+            title.textContent = pad.title;
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            meta.textContent = active && active.id === pad.id ? 'ON · tap to stop' : modeLabel(pad);
+            button.append(title, meta);
+            if (active && active.id === pad.id && active.endsAt) {
+                const bar = document.createElement('div');
+                bar.className = 'progress';
+                bar.dataset.start = active.startedAt;
+                bar.dataset.end = active.endsAt;
+                button.appendChild(bar);
+            }
+            button.addEventListener('click', () => toggle(pad.id));
+            board.appendChild(button);
+        }
+        stopAll.disabled = !active;
+        status.textContent = message || (active ? `Running: ${active.title}` : `${pads.length} pad${pads.length === 1 ? '' : 's'}`);
+    }
+
+    function tickProgress() {
+        for (const bar of document.querySelectorAll('.progress')) {
+            const start = Number(bar.dataset.start), end = Number(bar.dataset.end);
+            bar.style.width = `${Math.max(0, Math.min(1, (end - Date.now()) / (end - start))) * 100}%`;
+        }
+        requestAnimationFrame(tickProgress);
+    }
+
+    async function api(path, method = 'GET') {
+        const response = await fetch(path, { method });
+        const json = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(json.error || `Request failed (${response.status})`);
+        return json;
+    }
+
+    async function load() {
+        try {
+            const json = await api('/api/lightboard');
+            pads = json.pads;
+            active = json.active;
+            message = json.hueEnabled ? '' : 'Hue lights are turned off in the app';
+        } catch (error) {
+            message = error.message;
+        }
+        render();
+    }
+
+    async function toggle(id) {
+        try {
+            const json = await api(`/api/lightboard/${encodeURIComponent(id)}/toggle`, 'POST');
+            active = json.active;
+            message = '';
+        } catch (error) {
+            message = error.message;
+        }
+        render();
+    }
+
+    stopAll.addEventListener('click', async () => {
+        try { active = (await api('/api/lightboard/stop', 'POST')).active; } catch (error) { message = error.message; }
+        render();
+    });
+
+    const socket = io();
+    socket.on('connect', load);
+    socket.on('disconnect', () => { message = 'Disconnected from the server'; render(); });
+    socket.on('lightboardState', state => { active = state.active; render(); });
+    // Pads are edited in the app (config.json); pick up changes
+    setInterval(load, 5000);
+    requestAnimationFrame(tickProgress);
+})();
+</script>
+</body>
+</html>

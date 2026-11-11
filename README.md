@@ -192,6 +192,35 @@ curl -X POST http://localhost:8082/api/hue/preview -H 'Content-Type: application
 curl -X DELETE http://localhost:8082/api/hue/preview
 ```
 
+### Lightboard
+
+A soundboard for your lights. Each pad has a title, a tile color, a Hue room/zone/entertainment area and
+an effect, and either runs for a set time or toggles on and off. Open `http://localhost:8082/lightboard`
+in a browser, on your phone (use your computer's IP address instead of `localhost`) or as an OBS custom
+dock, and tap a pad. Only one pad runs at a time. When it stops, your lights go back to how they were.
+
+Effects: `solid`, `strobe`, `colorCycle`, `breathe` and `police`. Police lights alternate two colors between
+two sides of the group, keeping each room on one side when the group spans rooms. They come in two styles:
+`swap` (sharp red/blue swaps, up to ~2 per second on bigger groups) and `flash` (Hue's built-in flashing,
+very light on the bridge).
+
+```json
+"hue": {
+  "lightboard": {
+    "pads": [
+      { "id": "police", "title": "Police", "tileColor": "#2244FF", "groupId": "86", "mode": "toggle",
+        "effect": { "type": "police", "style": "swap", "colors": ["#FF0000", "#0022FF"], "interval": 500 } },
+      { "id": "strobe", "title": "Strobe", "mode": "timed", "duration": 5000, "pauseAlerts": true,
+        "effect": { "type": "strobe", "colors": ["#FFFFFF"], "interval": 300 } }
+    ]
+  }
+}
+```
+
+Set `pauseAlerts` to skip gift/follow light effects while that pad runs. Starter pads are in
+`config/lightboard-templates.json`. API: `GET /api/hue/groups`, `GET /api/lightboard`,
+`POST /api/lightboard/:id/start|stop|toggle`, `POST /api/lightboard/stop`.
+
 ### Test Alerts
 
 To see an alert in the overlay, with its sound and light effect, without waiting for a real one:
